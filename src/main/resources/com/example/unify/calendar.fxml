@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.ColumnConstraints?>
+<?import javafx.scene.layout.GridPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.VBox?>
+
+<?import javafx.scene.layout.AnchorPane?>
+<BorderPane xmlns:fx="http://javafx.com/fxml"
+            fx:controller="com.example.unify.calendar.controller.calendarController"
+            style="-fx-background-color: white; -fx-border-color: #e0e0e0; -fx-border-width: 1; -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.1), 10, 0, 0, 0);">
+
+    <top>
+        <AnchorPane style="-fx-padding: 15;">
+
+            <Button text="&lt;" fx:id="prevMonthBtn"
+                    AnchorPane.leftAnchor="0.0" AnchorPane.topAnchor="0.0" AnchorPane.bottomAnchor="0.0"
+                     style="-fx-background-color: #bbdefb; -fx-text-fill: #1565c0; -fx-font-weight: bold; -fx-cursor: hand; -fx-min-width: 40;"/>
+            <Label fx:id="monthLabel"
+                   text="Month Year"
+                   alignment="CENTER"
+                   AnchorPane.leftAnchor="50.0" AnchorPane.rightAnchor="50.0" AnchorPane.topAnchor="4.0"
+                   style="-fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: #333333;"/>
+
+            <Button text="&gt;" fx:id="nextMonthBtn"
+                    AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0" AnchorPane.bottomAnchor="0.0"
+                    style="-fx-background-color: #bbdefb; -fx-text-fill: #1565c0; -fx-font-weight: bold; -fx-cursor: hand; -fx-min-width: 40;"/>
+
+        </AnchorPane>
+    </top>
+
+    <center>
+        <VBox spacing="0"> <padding>
+            <Insets top="0" right="15" bottom="15" left="15"/>
+        </padding>
+
+            <GridPane fx:id="weekdayHeader" hgap="0" vgap="0">
+                <columnConstraints>
+                    <ColumnConstraints percentWidth="14.28" halignment="CENTER" />
+                    <ColumnConstraints percentWidth="14.28" halignment="CENTER" />
+                    <ColumnConstraints percentWidth="14.28" halignment="CENTER" />
+                    <ColumnConstraints percentWidth="14.28" halignment="CENTER" />
+                    <ColumnConstraints percentWidth="14.28" halignment="CENTER" />
+                    <ColumnConstraints percentWidth="14.28" halignment="CENTER" />
+                    <ColumnConstraints percentWidth="14.28" halignment="CENTER" />
+                </columnConstraints>
+
+                <Label text="MON" GridPane.columnIndex="0" style="-fx-font-weight: bold; -fx-text-fill: #888888; -fx-padding: 10;"/>
+                <Label text="TUE" GridPane.columnIndex="1" style="-fx-font-weight: bold; -fx-text-fill: #888888; -fx-padding: 10;"/>
+                <Label text="WED" GridPane.columnIndex="2" style="-fx-font-weight: bold; -fx-text-fill: #888888; -fx-padding: 10;"/>
+                <Label text="THU" GridPane.columnIndex="3" style="-fx-font-weight: bold; -fx-text-fill: #888888; -fx-padding: 10;"/>
+                <Label text="FRI" GridPane.columnIndex="4" style="-fx-font-weight: bold; -fx-text-fill: #888888; -fx-padding: 10;"/>
+                <Label text="SAT" GridPane.columnIndex="5" style="-fx-font-weight: bold; -fx-text-fill: #888888; -fx-padding: 10;"/>
+                <Label text="SUN" GridPane.columnIndex="6" style="-fx-font-weight: bold; -fx-text-fill: #888888; -fx-padding: 10;"/>
+            </GridPane>
+
+            <GridPane fx:id="calendarGrid" hgap="1" vgap="1" style="-fx-background-color: #e0e0e0; -fx-border-color: #e0e0e0; -fx-border-width: 1;">
+                <columnConstraints>
+                    <ColumnConstraints percentWidth="14.28" />
+                    <ColumnConstraints percentWidth="14.28" />
+                    <ColumnConstraints percentWidth="14.28" />
+                    <ColumnConstraints percentWidth="14.28" />
+                    <ColumnConstraints percentWidth="14.28" />
+                    <ColumnConstraints percentWidth="14.28" />
+                    <ColumnConstraints percentWidth="14.28" />
+                </columnConstraints>
+            </GridPane>
+
+        </VBox>
+    </center>
+
+</BorderPane>
