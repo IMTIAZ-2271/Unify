@@ -12,11 +12,11 @@
                     <Label text="📅" style="-fx-font-size:26;"/>
                     <Label text="CalendarApp" style="-fx-text-fill:white;-fx-font-weight:bold;-fx-font-size:15;"/>
                 </HBox>
-                <HBox styleClass="sidebar-user" alignment="CENTER_LEFT" spacing="10">
+                <HBox fx:id="profileNameAndPictureCell" alignment="CENTER_LEFT" onMouseClicked="#showProfile" spacing="10" styleClass="sidebar-user">
                     <StackPane>
-                        <ImageView fx:id="userAvatar" fitWidth="36" fitHeight="36"/>
+                        <ImageView fx:id="userAvatar" fitHeight="36" fitWidth="36" />
                     </StackPane>
-                    <Label fx:id="userNameLabel" style="-fx-text-fill:white;-fx-font-weight:bold;" maxWidth="130"/>
+                    <Label fx:id="userNameLabel" maxWidth="130" style="-fx-text-fill:white;-fx-font-weight:bold;" />
                 </HBox>
                 <Separator style="-fx-opacity:0.3;"/>
                 <Button text="📅  Calendar"       styleClass="sbar-btn" maxWidth="Infinity" onAction="#showCalendar"/>
