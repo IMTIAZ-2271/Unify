@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.image.*?>
+<ScrollPane xmlns:fx="http://javafx.com/fxml" fitToWidth="true"
+            fx:controller="com.calendarapp.controller.ProfileController"
+            style="-fx-background:white;-fx-background-color:white;">
+<VBox style="-fx-background-color:white;" spacing="0">
+
+    <HBox styleClass="panel-header">
+        <Label text="My Profile" styleClass="panel-title"/>
+    </HBox>
+
+    <HBox spacing="32" style="-fx-padding:24;">
+
+        <VBox spacing="14" alignment="CENTER" prefWidth="200">
+            <StackPane><ImageView fx:id="avatarView" fitWidth="100" fitHeight="100"/></StackPane>
+            <Button text="Change Photo" styleClass="btn-outline-sm" onAction="#pickAvatar"/>
+            <Label fx:id="usernameLabel" style="-fx-font-size:15;-fx-font-weight:bold;"/>
+            <Label fx:id="emailLabel"   style="-fx-text-fill:#888;"/>
+            <Label fx:id="sinceLabel"   style="-fx-text-fill:#bbb;-fx-font-size:11;"/>
+        </VBox>
+
+        <VBox spacing="20" HBox.hgrow="ALWAYS">
+
+            <VBox spacing="10" styleClass="form-section">
+                <Label text="Profile Information" style="-fx-font-size:15;-fx-font-weight:bold;"/>
+                <VBox spacing="5">
+                    <Label text="Display Name" styleClass="field-label"/>
+                    <TextField fx:id="displayField" styleClass="input" maxWidth="Infinity"/>
+                </VBox>
+                <VBox spacing="5">
+                    <Label text="Bio" styleClass="field-label"/>
+                    <TextArea fx:id="bioArea" promptText="About you…" prefRowCount="3" styleClass="input"/>
+                </VBox>
+                <Label fx:id="profileErr"  styleClass="err"/>
+                <Label fx:id="successMsg"  styleClass="ok"/>
+                <Button text="Save Profile" styleClass="btn-primary-sm" onAction="#saveProfile"/>
+            </VBox>
+
+            <VBox spacing="10" styleClass="form-section">
+                <Label text="Change Password" style="-fx-font-size:15;-fx-font-weight:bold;"/>
+                <VBox spacing="5">
+                    <Label text="Current Password" styleClass="field-label"/>
+                    <PasswordField fx:id="curPassField" styleClass="input" maxWidth="Infinity"/>
+                </VBox>
+                <VBox spacing="5">
+                    <Label text="New Password" styleClass="field-label"/>
+                    <PasswordField fx:id="newPassField" styleClass="input" maxWidth="Infinity"/>
+                </VBox>
+                <VBox spacing="5">
+                    <Label text="Confirm New Password" styleClass="field-label"/>
+                    <PasswordField fx:id="confirmPassField" styleClass="input" maxWidth="Infinity"/>
+                </VBox>
+                <Label fx:id="passErr" styleClass="err"/>
+                <Button text="Change Password" styleClass="btn-outline-sm" onAction="#changePassword"/>
+            </VBox>
+
+        </VBox>
+    </HBox>
+</VBox>
+</ScrollPane>

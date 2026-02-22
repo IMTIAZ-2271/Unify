@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.geometry.Insets?>
+<VBox xmlns:fx="http://javafx.com/fxml"
+      fx:controller="com.calendarapp.controller.EventFormController"
+      styleClass="dialog-panel" spacing="14" prefWidth="520">
+    <padding><Insets top="22" right="24" bottom="22" left="24"/></padding>
+
+    <Label text="Event" styleClass="dialog-title"/>
+
+    <VBox spacing="5">
+        <Label text="Title *" styleClass="field-label"/>
+        <TextField fx:id="titleField" promptText="Event title" styleClass="input" maxWidth="Infinity"/>
+    </VBox>
+    <VBox spacing="5">
+        <Label text="Description" styleClass="field-label"/>
+        <TextArea fx:id="descArea" promptText="Optional description" prefRowCount="2" styleClass="input"/>
+    </VBox>
+    <VBox spacing="5">
+        <Label text="Location" styleClass="field-label"/>
+        <TextField fx:id="locField" promptText="Optional location" styleClass="input" maxWidth="Infinity"/>
+    </VBox>
+
+    <HBox spacing="10">
+        <VBox spacing="5" HBox.hgrow="ALWAYS">
+            <Label text="Start Date" styleClass="field-label"/>
+            <DatePicker fx:id="startDate" maxWidth="Infinity"/>
+        </VBox>
+        <VBox spacing="5"><Label text="H" styleClass="field-label"/>
+            <Spinner fx:id="startHour" prefWidth="65" editable="true"/></VBox>
+        <VBox spacing="5"><Label text="M" styleClass="field-label"/>
+            <Spinner fx:id="startMin" prefWidth="65" editable="true"/></VBox>
+    </HBox>
+    <HBox spacing="10">
+        <VBox spacing="5" HBox.hgrow="ALWAYS">
+            <Label text="End Date" styleClass="field-label"/>
+            <DatePicker fx:id="endDate" maxWidth="Infinity"/>
+        </VBox>
+        <VBox spacing="5"><Label text="H" styleClass="field-label"/>
+            <Spinner fx:id="endHour" prefWidth="65" editable="true"/></VBox>
+        <VBox spacing="5"><Label text="M" styleClass="field-label"/>
+            <Spinner fx:id="endMin" prefWidth="65" editable="true"/></VBox>
+    </HBox>
+
+    <HBox spacing="16" alignment="CENTER_LEFT">
+        <RadioButton fx:id="personalRadio" text="Personal"/>
+        <RadioButton fx:id="groupRadio" text="Group"/>
+        <ComboBox fx:id="groupCombo" promptText="Select group" HBox.hgrow="ALWAYS" maxWidth="Infinity"/>
+    </HBox>
+
+    <HBox spacing="16" alignment="CENTER_LEFT">
+        <VBox spacing="4"><Label text="Color" styleClass="field-label"/><ColorPicker fx:id="colorPicker"/></VBox>
+        <CheckBox fx:id="allDayCheck" text="All Day"/>
+    </HBox>
+
+    <Label fx:id="errorLabel" styleClass="err"/>
+
+    <HBox spacing="10" alignment="CENTER_RIGHT">
+        <Button fx:id="deleteBtn" text="Delete" styleClass="btn-danger-sm" onAction="#doDelete"/>
+        <Region HBox.hgrow="ALWAYS"/>
+        <Button text="Cancel" styleClass="btn-outline-sm" onAction="#doCancel"/>
+        <Button fx:id="saveBtn" text="Save" styleClass="btn-primary-sm" onAction="#doSave"/>
+    </HBox>
+</VBox>

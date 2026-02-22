@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<VBox xmlns:fx="http://javafx.com/fxml"
+      fx:controller="com.calendarapp.controller.DayViewController"
+      style="-fx-background-color:white;" prefWidth="780" prefHeight="680">
+
+    <HBox styleClass="cal-header" alignment="CENTER_LEFT" spacing="12">
+        <Label fx:id="dateLabel" styleClass="month-label"/>
+        <Region HBox.hgrow="ALWAYS"/>
+        <Button text="＋ New Event" styleClass="btn-primary-sm" onAction="#newEvent"/>
+    </HBox>
+
+    <ScrollPane fx:id="scrollPane" fitToWidth="true" VBox.vgrow="ALWAYS"
+                style="-fx-background:white;-fx-background-color:white;">
+        <AnchorPane fx:id="timePane" prefWidth="730" style="-fx-background-color:white;"/>
+    </ScrollPane>
+</VBox>

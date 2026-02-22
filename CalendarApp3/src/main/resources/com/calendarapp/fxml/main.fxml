@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.image.*?>
+<StackPane xmlns:fx="http://javafx.com/fxml"
+           fx:controller="com.calendarapp.controller.MainController">
+
+    <BorderPane>
+        <left>
+            <VBox styleClass="sidebar" prefWidth="210" spacing="2">
+                <HBox styleClass="sidebar-logo" alignment="CENTER_LEFT" spacing="10">
+                    <Label text="📅" style="-fx-font-size:26;"/>
+                    <Label text="CalendarApp" style="-fx-text-fill:white;-fx-font-weight:bold;-fx-font-size:15;"/>
+                </HBox>
+                <HBox styleClass="sidebar-user" alignment="CENTER_LEFT" spacing="10">
+                    <StackPane>
+                        <ImageView fx:id="userAvatar" fitWidth="36" fitHeight="36"/>
+                    </StackPane>
+                    <Label fx:id="userNameLabel" style="-fx-text-fill:white;-fx-font-weight:bold;" maxWidth="130"/>
+                </HBox>
+                <Separator style="-fx-opacity:0.3;"/>
+                <Button text="📅  Calendar"       styleClass="sbar-btn" maxWidth="Infinity" onAction="#showCalendar"/>
+                <Button text="👥  Groups"         styleClass="sbar-btn" maxWidth="Infinity" onAction="#showGroups"/>
+                <Button text="👤  Profile"        styleClass="sbar-btn" maxWidth="Infinity" onAction="#showProfile"/>
+                <StackPane>
+                    <Button text="🔔  Notifications" styleClass="sbar-btn" maxWidth="Infinity" onAction="#showNotifications"/>
+                    <Label fx:id="notifBadge" styleClass="badge" StackPane.alignment="TOP_RIGHT"
+                           style="-fx-translate-x:-8;-fx-translate-y:4;"/>
+                </StackPane>
+                <Region VBox.vgrow="ALWAYS"/>
+                <Separator style="-fx-opacity:0.3;"/>
+                <Button text="🚪  Logout" styleClass="sbar-btn-danger" maxWidth="Infinity" onAction="#doLogout"/>
+            </VBox>
+        </left>
+        <center>
+            <StackPane fx:id="contentArea" style="-fx-background-color:#F8FAFC;"/>
+        </center>
+    </BorderPane>
+
+    <!-- Modal overlay - Navigator controls visibility -->
+    <StackPane fx:id="overlayArea"
+               style="-fx-background-color:rgba(0,0,0,0.48);"
+               alignment="CENTER"
+               visible="false"/>
+
+</StackPane>

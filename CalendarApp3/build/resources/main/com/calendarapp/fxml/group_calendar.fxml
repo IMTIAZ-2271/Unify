@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<VBox xmlns:fx="http://javafx.com/fxml"
+      fx:controller="com.calendarapp.controller.GroupCalendarController"
+      style="-fx-background-color:white;" VBox.vgrow="ALWAYS">
+
+    <!-- Mini header -->
+    <HBox style="-fx-padding:8 12;-fx-border-color:#F1F5F9;-fx-border-width:0 0 1 0;"
+          alignment="CENTER_LEFT" spacing="8">
+        <Button text="◀" styleClass="nav-btn" onAction="#prevMonth" style="-fx-font-size:10px;"/>
+        <Label fx:id="monthYearLabel" style="-fx-font-size:14px;-fx-font-weight:bold;-fx-text-fill:#1E293B;"/>
+        <Button text="▶" styleClass="nav-btn" onAction="#nextMonth" style="-fx-font-size:10px;"/>
+        <Button text="Today" styleClass="btn-outline-sm" onAction="#goToday" style="-fx-font-size:10px;"/>
+    </HBox>
+
+    <!-- Day headers -->
+    <GridPane style="-fx-background-color:#F8FAFC;-fx-border-color:#E2E8F0;-fx-border-width:0 0 1 0;">
+        <Label text="Sun" styleClass="dow" GridPane.columnIndex="0" style="-fx-font-size:10px;"/>
+        <Label text="Mon" styleClass="dow" GridPane.columnIndex="1" style="-fx-font-size:10px;"/>
+        <Label text="Tue" styleClass="dow" GridPane.columnIndex="2" style="-fx-font-size:10px;"/>
+        <Label text="Wed" styleClass="dow" GridPane.columnIndex="3" style="-fx-font-size:10px;"/>
+        <Label text="Thu" styleClass="dow" GridPane.columnIndex="4" style="-fx-font-size:10px;"/>
+        <Label text="Fri" styleClass="dow" GridPane.columnIndex="5" style="-fx-font-size:10px;"/>
+        <Label text="Sat" styleClass="dow" GridPane.columnIndex="6" style="-fx-font-size:10px;"/>
+        <columnConstraints>
+            <ColumnConstraints percentWidth="14.286" hgrow="ALWAYS"/>
+            <ColumnConstraints percentWidth="14.286" hgrow="ALWAYS"/>
+            <ColumnConstraints percentWidth="14.286" hgrow="ALWAYS"/>
+            <ColumnConstraints percentWidth="14.286" hgrow="ALWAYS"/>
+            <ColumnConstraints percentWidth="14.286" hgrow="ALWAYS"/>
+            <ColumnConstraints percentWidth="14.286" hgrow="ALWAYS"/>
+            <ColumnConstraints percentWidth="14.286" hgrow="ALWAYS"/>
+        </columnConstraints>
+    </GridPane>
+
+    <!-- Calendar grid -->
+    <ScrollPane fitToWidth="true" VBox.vgrow="ALWAYS"
+                style="-fx-background:white;-fx-background-color:white;">
+        <GridPane fx:id="calGrid" style="-fx-background-color:white;">
+            <columnConstraints>
+                <ColumnConstraints percentWidth="14.286" hgrow="ALWAYS"/>
+                <ColumnConstraints percentWidth="14.286" hgrow="ALWAYS"/>
+                <ColumnConstraints percentWidth="14.286" hgrow="ALWAYS"/>
+                <ColumnConstraints percentWidth="14.286" hgrow="ALWAYS"/>
+                <ColumnConstraints percentWidth="14.286" hgrow="ALWAYS"/>
+                <ColumnConstraints percentWidth="14.286" hgrow="ALWAYS"/>
+                <ColumnConstraints percentWidth="14.286" hgrow="ALWAYS"/>
+            </columnConstraints>
+        </GridPane>
+    </ScrollPane>
+</VBox>

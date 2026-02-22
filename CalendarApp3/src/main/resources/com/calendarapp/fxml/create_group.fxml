@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.image.*?>
+<?import javafx.geometry.Insets?>
+<VBox xmlns:fx="http://javafx.com/fxml"
+      fx:controller="com.calendarapp.controller.CreateGroupController"
+      styleClass="dialog-panel" spacing="14" prefWidth="480">
+    <padding><Insets top="22" right="24" bottom="22" left="24"/></padding>
+
+    <Label fx:id="titleLabel" text="Create Group" styleClass="dialog-title"/>
+
+    <HBox spacing="16" alignment="CENTER_LEFT">
+        <StackPane><ImageView fx:id="previewImg" fitWidth="80" fitHeight="80"/></StackPane>
+        <Button text="📷 Upload Picture" styleClass="btn-outline-sm" onAction="#pickImage"/>
+    </HBox>
+
+    <VBox spacing="5">
+        <Label text="Group Name *" styleClass="field-label"/>
+        <TextField fx:id="nameField" promptText="Enter group name" styleClass="input" maxWidth="Infinity"/>
+    </VBox>
+    <VBox spacing="5">
+        <Label text="Description" styleClass="field-label"/>
+        <TextArea fx:id="descArea" promptText="What is this group about?" prefRowCount="3" styleClass="input"/>
+    </VBox>
+    <VBox spacing="5">
+        <Label text="Parent Group (optional)" styleClass="field-label"/>
+        <ComboBox fx:id="parentCombo" maxWidth="Infinity"/>
+        <Label text="Only parent group members can join sub-groups."
+               style="-fx-text-fill:#94A3B8;-fx-font-size:11;"/>
+    </VBox>
+
+    <Label fx:id="errorLabel" styleClass="err"/>
+
+    <HBox spacing="10" alignment="CENTER_RIGHT">
+        <Button text="Cancel" styleClass="btn-outline-sm" onAction="#doCancel"/>
+        <Button fx:id="saveBtn" text="Save" styleClass="btn-primary-sm" onAction="#doSave"/>
+    </HBox>
+</VBox>

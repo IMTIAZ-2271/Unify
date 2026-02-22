@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<HBox xmlns:fx="http://javafx.com/fxml"
+      fx:controller="com.calendarapp.controller.LoginController"
+      styleClass="login-root" prefWidth="900" prefHeight="580">
+
+    <VBox styleClass="brand-panel" alignment="CENTER" prefWidth="400" spacing="12">
+        <Label text="📅" style="-fx-font-size:64;"/>
+        <Label text="CalendarApp" style="-fx-font-size:30;-fx-font-weight:bold;-fx-text-fill:white;"/>
+        <Label text="Manage your time, connect your world."
+               wrapText="true" style="-fx-font-size:14;-fx-text-fill:rgba(255,255,255,0.8);-fx-text-alignment:center;"/>
+    </VBox>
+
+    <VBox styleClass="form-panel" alignment="CENTER" HBox.hgrow="ALWAYS" spacing="0">
+        <VBox maxWidth="340" spacing="18">
+            <Label text="Welcome back" style="-fx-font-size:26;-fx-font-weight:bold;-fx-text-fill:#1E293B;"/>
+            <Label text="Sign in to your account" style="-fx-text-fill:#888;"/>
+
+            <VBox spacing="6">
+                <Label text="Username or Email" styleClass="field-label"/>
+                <TextField fx:id="usernameField" promptText="username or email" styleClass="input"/>
+            </VBox>
+            <VBox spacing="6">
+                <Label text="Password" styleClass="field-label"/>
+                <PasswordField fx:id="passwordField" promptText="password" styleClass="input"/>
+            </VBox>
+
+            <Label fx:id="errorLabel" styleClass="err" wrapText="true" maxWidth="340"/>
+
+            <Button fx:id="loginBtn" text="Sign In" styleClass="btn-primary"
+                    maxWidth="Infinity" prefHeight="42" onAction="#doLogin"/>
+
+            <HBox alignment="CENTER" spacing="8">
+                <Label text="New here?" style="-fx-text-fill:#888;"/>
+                <Button text="Create an account" styleClass="btn-link" onAction="#goRegister"/>
+            </HBox>
+        </VBox>
+    </VBox>
+</HBox>
