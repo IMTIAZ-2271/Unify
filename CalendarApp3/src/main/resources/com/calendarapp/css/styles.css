@@ -2,7 +2,7 @@
    CalendarApp – Stylesheet
    ══════════════════════════════════════════════ */
 
-.root { -fx-font-family: "Helvetica Neue", Arial, sans-serif; -fx-font-size: 13px; }
+.root { -fx-font-family: "Roboto Thin", Arial, sans-serif; -fx-font-size: 13px; }
 
 /* ── Login/Register ── */
 .login-root   { -fx-background-color: #F1F5F9; }
