@@ -1,0 +1,100 @@
+package com.Unify.controller;
+
+import com.Unify.App;
+import com.Unify.AppData;
+import com.Unify.Navigator;
+import com.Unify.Session;
+import com.Unify.dao.NotificationDAO;
+import com.Unify.service.NotificationService;
+import com.Unify.util.Imgs;
+import com.Unify.util.SessionStore;
+import javafx.application.Platform;
+import javafx.fxml.FXML;
+import javafx.scene.control.Label;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.StackPane;
+
+public class MainController {
+
+    public StackPane overlayArea2;
+    public HBox profileNameAndPictureCell;
+    @FXML
+    private StackPane contentArea;
+    @FXML
+    private StackPane overlayArea;
+    @FXML
+    private Label userNameLabel;
+    @FXML
+    private ImageView userAvatar;
+    @FXML
+    private Label notifBadge;
+
+    private final NotificationDAO notifDAO = new NotificationDAO();
+
+    @FXML
+    private void initialize() {
+        // Wire single-window navigation
+        Navigator.init(contentArea, overlayArea);
+
+        userNameLabel.setText(Session.currentUser().getDisplayName());
+        Image img = Imgs.fromBytes(Session.currentUser().getProfilePicture());
+        if (img != null)
+            userAvatar.setImage(img);
+        Imgs.circle(userAvatar, 18);
+
+        NotificationService.get().setBadgeUpdater(count -> {
+            notifBadge.setText(count > 0 ? String.valueOf(count) : "");
+            notifBadge.setVisible(count > 0);
+        });
+        refreshBadge();
+        showCalendar();
+    }
+
+    @FXML
+    public void showCalendar() {
+        Navigator.goTo("/com/Unify/fxml/month_view.fxml");
+    }
+
+    @FXML
+    public void showGroups() {
+        Navigator.goTo("/com/Unify/fxml/groups.fxml");
+    }
+
+    @FXML
+    public void showNotifications() {
+        Navigator.goTo("/com/Unify/fxml/notifications.fxml");
+        refreshBadge();
+    }
+
+    @FXML
+    public void showProfile() {
+        Navigator.goTo("/com/Unify/fxml/profile.fxml");
+    }
+
+    @FXML
+    public void doLogout() {
+        try {
+            NotificationService.get().stop();
+            SessionStore.clear();
+            Session.logout();
+            App.showLogin();
+            MonthViewController.refreshCheckbox();
+            AppData.get().clear();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void refreshBadge() {
+        try {
+            int n = AppData.get().getUnreadCount();
+            Platform.runLater(() -> {
+                notifBadge.setText(n > 0 ? String.valueOf(n) : "");
+                notifBadge.setVisible(n > 0);
+            });
+        } catch (Exception ignored) {
+        }
+    }
+}
