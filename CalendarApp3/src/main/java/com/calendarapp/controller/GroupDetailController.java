@@ -1,5 +1,6 @@
 package com.calendarapp.controller;
 
+import com.calendarapp.AppData;
 import com.calendarapp.Navigator;
 import com.calendarapp.Session;
 import com.calendarapp.dao.EventDAO;
@@ -10,6 +11,7 @@ import com.calendarapp.model.Event;
 import com.calendarapp.model.Group;
 import com.calendarapp.model.Notification;
 import com.calendarapp.model.User;
+import com.calendarapp.service.SyncEngine;
 import com.calendarapp.util.ColorUtil;
 import com.calendarapp.util.Imgs;
 import javafx.fxml.FXML;
@@ -108,19 +110,21 @@ public class GroupDetailController {
             Button roleBtn = new Button(isAdmin ? "Remove Admin" : "Make Admin");
             roleBtn.getStyleClass().add(isAdmin ? "btn-warning-small" : "btn-primary-small");
             roleBtn.setOnAction(e -> {
+                SyncEngine.get().push(() ->{
                 try {
                     String newRole = isAdmin ? "member" : "admin";
                     groupDAO.setRole(group.getId(), u.getId(), newRole);
                     Notification n = new Notification(u.getId(),
-                        "admin".equals(newRole) ? "⭐ You're now an Admin" : "🔻 Admin Role Removed",
-                        "admin".equals(newRole)
-                            ? "You've been made admin of " + group.getName()
-                            : "Your admin role in " + group.getName() + " was removed.",
-                        "admin".equals(newRole) ? "admin_added" : "admin_removed");
+                            "admin".equals(newRole) ? "⭐ You're now an Admin" : "🔻 Admin Role Removed",
+                            "admin".equals(newRole)
+                                    ? "You've been made admin of " + group.getName()
+                                    : "Your admin role in " + group.getName() + " was removed.",
+                            "admin".equals(newRole) ? "admin_added" : "admin_removed");
                     n.setReferenceId(group.getId());
                     notifDAO.create(n);
                     loadMembers();
                 } catch (Exception ex) { ex.printStackTrace(); }
+                });
             });
             Button remBtn = new Button("Remove");
             remBtn.getStyleClass().add("btn-danger-small");
@@ -143,7 +147,12 @@ public class GroupDetailController {
         userSearchResults.getChildren().clear();
         if (q.isEmpty()) return;
         try {
-            List<User> users = userDAO.search(q, Session.uid());
+            List<User> users;
+            if(group.getParentGroupId()==null) {
+                users = userDAO.search(q, Session.uid());
+            } else {
+                users = userDAO.searchByGroup(q,Session.uid(),group.getParentGroupId());
+            }
             for (User u : users) {
                 HBox row = new HBox(10);
                 row.setAlignment(Pos.CENTER_LEFT);
@@ -358,7 +367,7 @@ public class GroupDetailController {
     // ── Actions ───────────────────────────────────────────────────────────
 
     @FXML private void doAddEvent() {
-        EventFormController ctrl = Navigator.showModal("/com/calendarapp/fxml/event_form.fxml");
+        EventFormController ctrl = Navigator.showWindow("/com/calendarapp/fxml/event_form.fxml");
         if (ctrl != null) {
             ctrl.setGroup(group);
             ctrl.setOnClose(() -> { loadEventList(); buildGroupCalendar(); });
@@ -366,7 +375,7 @@ public class GroupDetailController {
     }
 
     @FXML private void doEditGroup() {
-        CreateGroupController ctrl = Navigator.showModal("/com/calendarapp/fxml/create_group.fxml");
+        CreateGroupController ctrl = Navigator.showWindow("/com/calendarapp/fxml/create_group.fxml");
         if (ctrl != null) {
             ctrl.setGroup(group);
             ctrl.setOnClose(() -> {
@@ -387,7 +396,7 @@ public class GroupDetailController {
     }
 
     private void openEventDetail(Event e) {
-        EventDetailController ctrl = Navigator.showModal("/com/calendarapp/fxml/event_detail.fxml");
+        EventDetailController ctrl = Navigator.showWindow("/com/calendarapp/fxml/event_detail.fxml");
         if (ctrl != null) ctrl.setEvent(e, () -> { loadEventList(); buildGroupCalendar(); });
     }
 

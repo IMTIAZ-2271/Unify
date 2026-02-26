@@ -51,6 +51,22 @@ public class EventDAO {
         }
     }
 
+    // In EventDAO.java
+    public List<Event> allForUser(int uid) throws SQLException {
+        String sql = SELECT
+                + "WHERE (e.event_type='personal' AND e.created_by=?) "
+                + "   OR (e.event_type='group' AND e.group_id IN "
+                + "       (SELECT group_id FROM group_members WHERE user_id=?)) "
+                + "ORDER BY e.start_time";
+        List<Event> list = new ArrayList<>();
+        try (Connection c = DB.conn(); PreparedStatement ps = c.prepareStatement(sql)) {
+            ps.setInt(1, uid); ps.setInt(2, uid);
+            ResultSet rs = ps.executeQuery();
+            while (rs.next()) list.add(map(rs));
+        }
+        return list;
+    }
+
     public List<Event> forMonth(int uid, int year, int month) throws SQLException {
         LocalDateTime from = LocalDateTime.of(year, month, 1, 0, 0);
         LocalDateTime to   = from.plusMonths(1).minusSeconds(1);
@@ -150,4 +166,21 @@ public class EventDAO {
         if (ca != null) e.setCreatedAt(ca.toLocalDateTime());
         return e;
     }
+
+    public List<Event> changedSince(int uid, LocalDateTime since) throws SQLException {
+        String sql = SELECT
+                + "WHERE e.last_modified > ? "
+                + "AND ((e.event_type='personal' AND e.created_by=?) "
+                + "  OR (e.event_type='group' AND e.group_id IN "
+                + "      (SELECT group_id FROM group_members WHERE user_id=?)))";
+        List<Event> list = new ArrayList<>();
+        try (Connection c = DB.conn(); PreparedStatement ps = c.prepareStatement(sql)) {
+            ps.setTimestamp(1, Timestamp.valueOf(since));
+            ps.setInt(2, uid); ps.setInt(3, uid);
+            ResultSet rs = ps.executeQuery();
+            while (rs.next()) list.add(map(rs));
+        }
+        return list;
+    }
+
 }

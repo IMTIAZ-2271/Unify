@@ -1,10 +1,10 @@
 package com.calendarapp.controller;
 
+import com.calendarapp.AppData;
 import com.calendarapp.Navigator;
-import com.calendarapp.Session;
-import com.calendarapp.dao.EventDAO;
 import com.calendarapp.model.Event;
 import com.calendarapp.util.ColorUtil;
+import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.geometry.Insets;
 import javafx.scene.control.*;
@@ -24,7 +24,6 @@ public class DayViewController {
     @FXML private AnchorPane  timePane;
 
     private LocalDate date;
-    private final EventDAO dao = new EventDAO();
 
     private static final double PX_PER_MIN = 1.4;
     private static final double TIME_COL   = 60.0;
@@ -32,7 +31,10 @@ public class DayViewController {
 
     @FXML private void initialize() {
         // setDate() is called externally after push(); do nothing here.
+        AppData.get().addEventsListener(this::build);
     }
+
+    public LocalDate getDate() { return date; }
 
     public void setDate(LocalDate d) {
         this.date = d;
@@ -90,8 +92,11 @@ public class DayViewController {
         // Events
         try {
             if (date != null) {
-                List<Event> events = dao.forDay(Session.uid(), date);
-                for (Event e : events) placeEvent(e);
+                List<Event> events = AppData.get().getEventsForDay(date);//dao.forDay(Session.uid(), date);
+                for (Event e : events) {
+                    if((!e.isPersonal() && MonthViewController.groupFilter.get(e.getGroupId())) || (e.isPersonal() && MonthViewController.showPersonal))
+                        placeEvent(e);
+                }
             }
         } catch (Exception ex) { ex.printStackTrace(); }
     }
@@ -141,15 +146,29 @@ public class DayViewController {
     }
 
     private void openDetail(Event e) {
-        EventDetailController ctrl = Navigator.showModal("/com/calendarapp/fxml/event_detail.fxml");
-        if (ctrl != null) ctrl.setEvent(e, this::build);
+        EventDetailController ctrl = Navigator.showWindow("/com/calendarapp/fxml/event_detail.fxml");
+        if (ctrl != null) {
+            ctrl.setEvent(e, this::build);
+        }
     }
 
     @FXML private void newEvent() {
-        EventFormController ctrl = Navigator.showModal("/com/calendarapp/fxml/event_form.fxml");
+        EventFormController ctrl = Navigator.showWindow("/com/calendarapp/fxml/event_form.fxml");
         if (ctrl != null) {
             ctrl.setDefaultDate(date != null ? date : LocalDate.now());
             ctrl.setOnClose(this::build);
         }
+    }
+
+    @FXML private void gotoMonthView(ActionEvent event) {
+        Navigator.goTo("/com/calendarapp/fxml/month_view.fxml");
+    }
+
+    @FXML private void gotoPreviousDay(ActionEvent event) {
+        setDate(date.minusDays(1));
+    }
+
+    @FXML private void gotoNextDay(ActionEvent event) {
+        setDate(date.plusDays(1));
     }
 }

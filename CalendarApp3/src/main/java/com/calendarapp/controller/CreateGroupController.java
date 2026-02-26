@@ -1,8 +1,11 @@
 package com.calendarapp.controller;
 
+import com.calendarapp.App;
+import com.calendarapp.AppData;
 import com.calendarapp.Navigator;
 import com.calendarapp.Session;
 import com.calendarapp.dao.GroupDAO;
+import com.calendarapp.model.Event;
 import com.calendarapp.model.Group;
 import com.calendarapp.util.Imgs;
 import javafx.fxml.FXML;
@@ -10,7 +13,9 @@ import javafx.scene.control.*;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.stage.FileChooser;
+import javafx.stage.Stage;
 
+import java.awt.event.MouseEvent;
 import java.io.File;
 import java.util.List;
 
@@ -39,7 +44,7 @@ public class CreateGroupController {
         try {
             Group none = new Group(); none.setName("None (Top-level group)"); none.setId(0);
             parentCombo.getItems().add(none);
-            parentCombo.getItems().addAll(dao.myGroups(Session.uid()));
+            parentCombo.getItems().addAll(AppData.get().getGroupsIAmAdminOf());
             parentCombo.setValue(none);
         } catch (Exception e) { e.printStackTrace(); }
     }
@@ -73,14 +78,23 @@ public class CreateGroupController {
         if (sel != null && sel.getId() != 0) parentId = sel.getId();
         try {
             if (existing != null) {
+                Group group = new Group();
+                group.setName(name);
                 dao.update(existing.getId(), name, descArea.getText().trim(), picBytes);
+                AppData.get().addOrUpdateGroup(group);
             } else {
-                dao.create(name, descArea.getText().trim(), Session.uid(), parentId);
+                Group group=dao.create(name, descArea.getText().trim(), Session.uid(), parentId);
+                AppData.get().addOrUpdateGroup(group);
             }
-            Navigator.closeModal(onClose);
+            //Navigator.closeModal(onClose);
+            Navigator.close(titleLabel,onClose);
         } catch (Exception e) { err("Error: " + e.getMessage()); e.printStackTrace(); }
     }
 
-    @FXML private void doCancel() { Navigator.closeModal(onClose); }
+    @FXML private void doCancel() {
+        //Navigator.closeModal(onClose);
+        Navigator.close(titleLabel,onClose);
+    }
     private void err(String m) { errorLabel.setText(m); errorLabel.setVisible(true); }
+
 }

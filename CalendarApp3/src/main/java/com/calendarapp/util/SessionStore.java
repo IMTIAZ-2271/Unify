@@ -7,7 +7,6 @@ import java.util.Properties;
 /**
  * Stores the last logged-in userId on disk so the app can auto-login
  * for up to 3 days without requiring re-authentication.
- *
  * File: ~/.calendarapp/session.properties
  * Cleared on explicit logout.
  */

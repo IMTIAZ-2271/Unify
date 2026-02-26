@@ -1,5 +1,7 @@
 package com.calendarapp.controller;
 
+import com.calendarapp.App;
+import com.calendarapp.AppData;
 import com.calendarapp.Navigator;
 import com.calendarapp.Session;
 import com.calendarapp.dao.EventDAO;
@@ -7,10 +9,12 @@ import com.calendarapp.dao.GroupDAO;
 import com.calendarapp.dao.NotificationDAO;
 import com.calendarapp.model.Event;
 import com.calendarapp.model.Group;
+import com.calendarapp.service.SyncEngine;
 import com.calendarapp.util.ColorUtil;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
 import javafx.scene.paint.Color;
+import javafx.stage.Stage;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -38,8 +42,6 @@ public class EventFormController {
     private Event    existing;
     private Runnable onClose;
     private final EventDAO        eventDAO = new EventDAO();
-    private final GroupDAO        groupDAO = new GroupDAO();
-    private final NotificationDAO notifDAO = new NotificationDAO();
 
     @FXML private void initialize() {
         startHour.setValueFactory(new SpinnerValueFactory.IntegerSpinnerValueFactory(0, 23, 9));
@@ -86,7 +88,7 @@ public class EventFormController {
 
     private void loadGroups() {
         try {
-            List<Group> groups = groupDAO.myGroups(Session.uid());
+            List<Group> groups = AppData.get().getGroups();
             groupCombo.getItems().setAll(groups);
             if (!groups.isEmpty() && groupCombo.getValue() == null) {
                 groupCombo.setValue(groups.get(0));
@@ -142,7 +144,68 @@ public class EventFormController {
     /** Callback to run after save/delete/cancel (e.g. re-render the calendar). */
     public void setOnClose(Runnable r) { this.onClose = r; }
 
+//    @FXML private void doSave() {
+//        String title = titleField.getText().trim();
+//        if (title.isEmpty()) { err("Title is required."); return; }
+//        if (startDate.getValue() == null || endDate.getValue() == null) {
+//            err("Select start and end dates."); return;
+//        }
+//
+//        LocalDateTime st = LocalDateTime.of(
+//            startDate.getValue(), LocalTime.of(startHour.getValue(), startMin.getValue()));
+//        LocalDateTime et = LocalDateTime.of(
+//            endDate.getValue(),   LocalTime.of(endHour.getValue(),   endMin.getValue()));
+//        if (!et.isAfter(st)) { err("End time must be after start time."); return; }
+//
+//        Color  c   = colorPicker.getValue();
+//        String hex = String.format("#%02X%02X%02X",
+//            (int)(c.getRed()*255), (int)(c.getGreen()*255), (int)(c.getBlue()*255));
+//
+//        Event ev = (existing != null) ? existing : new Event();
+//        ev.setTitle(title);
+//        ev.setDescription(descArea.getText().trim());
+//        ev.setLocation(locField.getText().trim());
+//        ev.setStartTime(st);
+//        ev.setEndTime(et);
+//        ev.setColor(hex);
+//        ev.setAllDay(allDayCheck.isSelected());
+//        ev.setCreatedBy(Session.uid());
+//
+//        if (groupRadio.isSelected() && groupCombo.getValue() != null) {
+//            ev.setEventType("group");
+//            ev.setGroupId(groupCombo.getValue().getId());
+//        } else {
+//            ev.setEventType("personal");
+//            ev.setGroupId(null);
+//        }
+//
+//        try {
+//            if (existing != null) {
+//                eventDAO.update(ev);
+//            } else {
+//                Event created = eventDAO.create(ev);
+//                if (created != null && created.isGroup() && created.getGroupId() != null) {
+//                    // Notify all group members about the new event
+//                    notifDAO.createForGroup(
+//                        created.getGroupId(),
+//                        "New Event: " + created.getTitle(),
+//                        "Starts: " + created.getStartTime().format(
+//                            DateTimeFormatter.ofPattern("MMM d 'at' h:mm a")),
+//                        "event_created",
+//                        created.getId(),
+//                        Session.uid());
+//                }
+//            }
+//            //Navigator.closeModal(onClose);
+//            Navigator.close(titleField,onClose);
+//        } catch (Exception e) {
+//            err("Error saving event: " + e.getMessage());
+//            e.printStackTrace();
+//        }
+//    }
+
     @FXML private void doSave() {
+
         String title = titleField.getText().trim();
         if (title.isEmpty()) { err("Title is required."); return; }
         if (startDate.getValue() == null || endDate.getValue() == null) {
@@ -177,28 +240,25 @@ public class EventFormController {
             ev.setGroupId(null);
         }
 
+        // ... validate ...
         try {
             if (existing != null) {
-                eventDAO.update(ev);
+                eventDAO.update(ev);              // update in DB immediately (async)
+                AppData.get().addOrUpdateEvent(ev); // update in memory instantly
             } else {
-                Event created = eventDAO.create(ev);
-                if (created != null && created.isGroup() && created.getGroupId() != null) {
-                    // Notify all group members about the new event
-                    notifDAO.createForGroup(
-                        created.getGroupId(),
-                        "New Event: " + created.getTitle(),
-                        "Starts: " + created.getStartTime().format(
-                            DateTimeFormatter.ofPattern("MMM d 'at' h:mm a")),
-                        "event_created",
-                        created.getId(),
-                        Session.uid());
-                }
+                // Optimistic: add to AppData now, send to DB in background
+                SyncEngine.get().push(() -> {
+                    try {
+                        Event created = eventDAO.create(ev);
+                        if (created != null) {
+                            AppData.get().addOrUpdateEvent(created);
+                            // send group notifications...
+                        }
+                    } catch (Exception e) { e.printStackTrace(); }
+                });
             }
-            Navigator.closeModal(onClose);
-        } catch (Exception e) {
-            err("Error saving event: " + e.getMessage());
-            e.printStackTrace();
-        }
+            Navigator.close(titleField,onClose);
+        } catch (Exception e) { err(e.getMessage()); }
     }
 
     @FXML private void doDelete() {
@@ -207,14 +267,19 @@ public class EventFormController {
             .showAndWait().ifPresent(b -> {
                 if (b == ButtonType.YES) {
                     try {
-                        eventDAO.delete(existing.getId());
-                        Navigator.closeModal(onClose);
+                        //eventDAO.delete(existing.getId());
+                        //Navigator.closeModal(onClose);
+                        AppData.get().removeEvent(existing.getId());
+                        Navigator.close(titleField,onClose);
                     } catch (Exception e) { err(e.getMessage()); }
                 }
             });
     }
 
-    @FXML private void doCancel() { Navigator.closeModal(onClose); }
+    @FXML private void doCancel() {
+        //Navigator.closeModal(onClose);
+        Navigator.close(titleField,onClose);
+    }
 
     private void err(String m) { errorLabel.setText(m); errorLabel.setVisible(true); }
 }

@@ -1,5 +1,7 @@
 package com.calendarapp.controller;
 
+import com.calendarapp.App;
+import com.calendarapp.AppData;
 import com.calendarapp.Navigator;
 import com.calendarapp.Session;
 import com.calendarapp.dao.EventDAO;
@@ -7,9 +9,12 @@ import com.calendarapp.dao.GroupDAO;
 import com.calendarapp.model.Event;
 import com.calendarapp.model.Group;
 import com.calendarapp.util.ColorUtil;
+import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
+import javafx.fxml.FXMLLoader;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
+import javafx.scene.Node;
 import javafx.scene.control.*;
 import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
@@ -25,24 +30,42 @@ public class MonthViewController {
     @FXML private Label      monthYearLabel;
     @FXML private GridPane   calGrid;
     @FXML private VBox       filterPanel;   // left sidebar for group filters
+    @FXML private VBox       calendarArea;
 
     private YearMonth ym = YearMonth.now();
 
     // Filter state
-    private boolean               showPersonal = true;
-    private final Map<Integer, Boolean> groupFilter = new LinkedHashMap<>(); // groupId → visible
+    public static boolean              showPersonal = true;
+    public static final Map<Integer, Boolean> groupFilter = new LinkedHashMap<>(); // groupId → visible
     private final Map<Integer, Group>   groupMap    = new LinkedHashMap<>();
 
     private final EventDAO dao      = new EventDAO();
     private final GroupDAO groupDAO = new GroupDAO();
 
+    private DayViewController dayViewController;
+    /*@FXML private void initialize() {
+        loadGroupFilters();
+        render();
+    }*/
+
+
+
     @FXML private void initialize() {
         loadGroupFilters();
         render();
+        // Re-render instantly whenever events change (e.g. sync from server)
+        AppData.get().addEventsListener(this::render);
     }
 
-    // ── Filter panel ──────────────────────────────────────────────────────
+    // Unregister when leaving
+    public void onDestroy() {
+        AppData.get().removeEventsListener(this::render);
+    }
 
+
+
+
+    // ── Filter panel ──────────────────────────────────────────────────────
     private void loadGroupFilters() {
         filterPanel.getChildren().clear();
 
@@ -52,30 +75,32 @@ public class MonthViewController {
 
         // Personal checkbox
         CheckBox personalCb = new CheckBox("Personal");
-        personalCb.setSelected(true);
+        personalCb.setSelected(showPersonal);
         personalCb.setStyle("-fx-font-size:12px;");
         Circle dot0 = new Circle(6, Color.web(ColorUtil.defaultPersonal()));
         HBox pRow = new HBox(6, dot0, personalCb);
         pRow.setAlignment(Pos.CENTER_LEFT);
         pRow.setPadding(new Insets(2, 0, 2, 0));
-        personalCb.selectedProperty().addListener((o, ov, nv) -> { showPersonal = nv; render(); });
+        personalCb.selectedProperty().addListener((o, ov, nv) -> { showPersonal = nv; dayRender();render(); });
         filterPanel.getChildren().add(pRow);
 
         // Group checkboxes
         try {
-            List<Group> groups = groupDAO.myGroups(Session.uid());
+            List<Group> groups = AppData.get().getGroups();
             for (Group g : groups) {
-                groupMap.put(g.getId(), g);
-                groupFilter.put(g.getId(), true);
+                int id=g.getId();
+                groupMap.put(id, g);
+                groupFilter.putIfAbsent(id, true);
 
                 String color = ColorUtil.forGroup(g.getId());
                 Circle dot = new Circle(6, Color.web(color));
 
                 CheckBox cb = new CheckBox(g.getName());
-                cb.setSelected(true);
+                cb.setSelected(groupFilter.get(id));
                 cb.setStyle("-fx-font-size:12px;");
                 cb.selectedProperty().addListener((o, ov, nv) -> {
-                    groupFilter.put(g.getId(), nv);
+                    groupFilter.put(id, nv);
+                    dayRender();
                     render();
                 });
 
@@ -100,9 +125,9 @@ public class MonthViewController {
 
         Map<LocalDate, List<Event>> byDay = new HashMap<>();
         try {
-            List<Event> events = dao.forMonth(Session.uid(), ym.getYear(), ym.getMonthValue());
+            List<Event> events = AppData.get().getEventsForMonth(
+                    ym.getYear(), ym.getMonthValue());
             for (Event e : events) {
-                // Apply filter
                 if (e.isPersonal() && !showPersonal) continue;
                 if (e.isGroup()) {
                     Integer gid = e.getGroupId();
@@ -174,22 +199,50 @@ public class MonthViewController {
 
     // ── Navigation ────────────────────────────────────────────────────────
 
-    private void openDay(LocalDate date) {
-        DayViewController ctrl = Navigator.push("/com/calendarapp/fxml/day_view.fxml");
-        if (ctrl != null) ctrl.setDate(date);
+    private void openDay(LocalDate date)  {
+        try {
+            FXMLLoader loader = App.loader("/com/calendarapp/fxml/day_view.fxml");
+            Node node = loader.load();
+            calendarArea.getChildren().setAll(node);
+            dayViewController = loader.getController();
+            dayViewController.setDate(date);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     private void openDetail(Event e) {
-        EventDetailController ctrl = Navigator.showModal("/com/calendarapp/fxml/event_detail.fxml");
+        EventDetailController ctrl = Navigator.showWindow("/com/calendarapp/fxml/event_detail.fxml");
         if (ctrl != null) ctrl.setEvent(e, this::render);
     }
 
     private void openForm(Event existing, LocalDate def) {
-        EventFormController ctrl = Navigator.showModal("/com/calendarapp/fxml/event_form.fxml");
+        EventFormController ctrl = Navigator.showWindow("/com/calendarapp/fxml/event_form.fxml");
         if (ctrl != null) {
             if (existing != null) ctrl.setEvent(existing);
             else                  ctrl.setDefaultDate(def);
             ctrl.setOnClose(this::render);
         }
+    }
+
+    public void checkAllGroups(){
+        groupFilter.replaceAll((key, oldValue) -> true);
+    }
+    public void uncheckAllGroups(){
+        groupFilter.replaceAll((key, oldValue) -> false);
+    }
+
+    public void checkOrUncheckAll(ActionEvent event) {
+
+    }
+
+    public static void refreshCheckbox()
+    {
+        groupFilter.clear();
+        showPersonal=true;
+    }
+
+    private void dayRender(){
+        if(dayViewController!=null) { dayViewController.setDate(dayViewController.getDate());}
     }
 }

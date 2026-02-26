@@ -19,7 +19,7 @@
         <Label fx:id="startLabel"   styleClass="dv" GridPane.columnIndex="1" GridPane.rowIndex="0"/>
         <Label text="End:"     styleClass="dk" GridPane.columnIndex="0" GridPane.rowIndex="1"/>
         <Label fx:id="endLabel"     styleClass="dv" GridPane.columnIndex="1" GridPane.rowIndex="1"/>
-        <Label text="Location:"styleClass="dk" GridPane.columnIndex="0" GridPane.rowIndex="2"/>
+        <Label text="Location:" styleClass="dk" GridPane.columnIndex="0" GridPane.rowIndex="2"/>
         <Label fx:id="locationLabel" styleClass="dv" GridPane.columnIndex="1" GridPane.rowIndex="2" wrapText="true"/>
         <Label text="Group:"   styleClass="dk" GridPane.columnIndex="0" GridPane.rowIndex="3"/>
         <Label fx:id="groupLabel"   styleClass="dv" GridPane.columnIndex="1" GridPane.rowIndex="3"/>

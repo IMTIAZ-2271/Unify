@@ -62,6 +62,26 @@ public class UserDAO {
         return list;
     }
 
+    public List<User> searchByGroup(String q, int excludeId, int parentGroupID) throws SQLException {
+        //String sql = "SELECT * FROM users WHERE (username LIKE ? OR display_name LIKE ?) AND id<>? LIMIT 20";
+        String sql="SELECT * " +
+        "FROM users u " +
+        "JOIN group_members gm ON u.id = gm.user_id " +
+        "WHERE gm.group_id = ? " +
+        "AND ( u.username LIKE ? OR u.display_name LIKE ?) AND u.id<>??";
+        List<User> list = new ArrayList<>();
+        try (Connection c = DB.conn(); PreparedStatement ps = c.prepareStatement(sql)) {
+            String w = "%" + q + "%";
+            ps.setInt(1,parentGroupID);
+            ps.setString(2, w);
+            ps.setString(3, w);
+            ps.setInt(4, excludeId);
+            ResultSet rs = ps.executeQuery();
+            while (rs.next()) list.add(map(rs));
+        }
+        return list;
+    }
+
     public boolean usernameExists(String username) throws SQLException {
         try (Connection c = DB.conn(); PreparedStatement ps = c.prepareStatement("SELECT id FROM users WHERE username=?")) {
             ps.setString(1, username);

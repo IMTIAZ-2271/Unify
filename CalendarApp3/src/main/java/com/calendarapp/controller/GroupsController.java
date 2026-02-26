@@ -144,6 +144,7 @@ public class GroupsController {
     private void respond(JoinRequest r, String status) {
         try {
             groupDAO.respond(r.getId(), status, Session.uid());
+            notifDAO.updateInviteAccepted(r.getUserId(),r.getGroupId(),"accepted".equals(status)?1:-1);
             Notification n = new Notification(r.getUserId(),
                 "accepted".equals(status) ? "✅ Join Request Accepted" : "❌ Join Request Declined",
                 "Your request to join " + r.getGroupName() + " was " + status + ".",
@@ -171,7 +172,7 @@ public class GroupsController {
     }
 
     @FXML private void openCreateGroup() {
-        CreateGroupController ctrl = Navigator.showModal("/com/calendarapp/fxml/create_group.fxml");
+        CreateGroupController ctrl = Navigator.showWindow("/com/calendarapp/fxml/create_group.fxml");
         if (ctrl != null) ctrl.setOnClose(this::loadMyGroups);
     }
 

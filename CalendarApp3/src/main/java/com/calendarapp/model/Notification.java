@@ -11,6 +11,7 @@ public class Notification {
     private boolean read;
     private Integer referenceId;
     private LocalDateTime createdAt;
+    private int inviteAccepted;
 
     public Notification() {}
     public Notification(int userId, String title, String message, String type) {
@@ -33,4 +34,6 @@ public class Notification {
     public void setReferenceId(Integer v)       { this.referenceId = v; }
     public LocalDateTime getCreatedAt()         { return createdAt; }
     public void setCreatedAt(LocalDateTime v)   { this.createdAt = v; }
+    public int getInviteAccepted()              {return inviteAccepted;}
+    public void setInviteAccepted(int i)        {inviteAccepted=i;}
 }

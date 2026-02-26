@@ -36,7 +36,7 @@ public class LoginController {
             if (user != null) {
                 Session.login(user);
                 SessionStore.save(user.getId());   // remember for 3 days
-                App.showMain();
+                App.goToMain();
             } else {
                 err("Invalid username or password.");
             }
@@ -55,7 +55,7 @@ public class LoginController {
             scene.getStylesheets().add(App.class.getResource("/com/calendarapp/css/styles.css").toExternalForm());
             Stage stage = (Stage) loginBtn.getScene().getWindow();
             stage.setScene(scene);
-            stage.setTitle("CalendarApp — Register");
+            stage.setTitle("Unify — Register");
         } catch (Exception ex) { ex.printStackTrace(); }
     }
 

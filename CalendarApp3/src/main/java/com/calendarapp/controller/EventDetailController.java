@@ -1,15 +1,19 @@
 package com.calendarapp.controller;
 
+import com.calendarapp.AppData;
 import com.calendarapp.Navigator;
 import com.calendarapp.Session;
 import com.calendarapp.dao.EventDAO;
 import com.calendarapp.dao.GroupDAO;
 import com.calendarapp.model.Event;
+import com.calendarapp.service.SyncEngine;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Circle;
+import javafx.stage.Stage;
 
+import java.sql.SQLException;
 import java.time.format.DateTimeFormatter;
 
 public class EventDetailController {
@@ -28,10 +32,9 @@ public class EventDetailController {
 
     private Event    event;
     private Runnable onClose;   // called after any action that changes data
-    private final EventDAO eventDAO = new EventDAO();
-    private final GroupDAO groupDAO = new GroupDAO();
     private static final DateTimeFormatter FMT =
         DateTimeFormatter.ofPattern("EEE, MMM d yyyy 'at' h:mm a");
+    private EventDAO eventDAO = new EventDAO();
 
     /** Called when no refresh callback is needed. */
     public void setEvent(Event e) {
@@ -42,7 +45,6 @@ public class EventDetailController {
     public void setEvent(Event e, Runnable onClose) {
         this.event   = e;
         this.onClose = onClose;
-
         try { colorDot.setFill(Color.web(e.getColor())); } catch (Exception ignored) {}
         titleLabel.setText(e.getTitle());
         typeBadge.setText(e.isPersonal() ? "Personal" : "Group Event");
@@ -60,7 +62,7 @@ public class EventDetailController {
         // Show edit/delete for creator OR group admin
         boolean canEdit = (e.getCreatedBy() == Session.uid());
         if (!canEdit && e.isGroup() && e.getGroupId() != null) {
-            try { canEdit = groupDAO.isAdmin(e.getGroupId(), Session.uid()); }
+            try { canEdit = AppData.get().isAdmin(e.getGroupId()); }
             catch (Exception ex) { ex.printStackTrace(); }
         }
         editBtn.setVisible(canEdit);
@@ -71,7 +73,7 @@ public class EventDetailController {
 
     @FXML private void doEdit() {
         // Swap this modal for the event-form modal in-place (no new window)
-        EventFormController ctrl = Navigator.swapModal("/com/calendarapp/fxml/event_form.fxml");
+        EventFormController ctrl = Navigator.swapWindow("/com/calendarapp/fxml/event_form.fxml", (Stage)titleLabel.getScene().getWindow());
         if (ctrl != null) {
             ctrl.setEvent(event);
             ctrl.setOnClose(onClose);
@@ -83,12 +85,22 @@ public class EventDetailController {
             .showAndWait().ifPresent(b -> {
                 if (b == ButtonType.YES) {
                     try {
-                        eventDAO.delete(event.getId());
-                        Navigator.closeModal(onClose);
-                    } catch (Exception e) { e.printStackTrace(); }
+                        AppData.get().removeEvent(event.getId());
+                        SyncEngine.get().push(() -> {
+                            try {
+                                eventDAO.delete(event.getId());
+                            } catch (Exception e) { e.printStackTrace(); }
+                        });
+                        Navigator.close(titleLabel,onClose);
+                    } catch (Exception e) { e.printStackTrace();
+                        Navigator.close(titleLabel,onClose); }
                 }
             });
     }
 
-    @FXML private void doClose() { Navigator.closeModal(onClose); }
+    @FXML private void doClose() {
+        //Navigator.closeModal(onClose);
+        Navigator.close(titleLabel,onClose);
+    }
+
 }

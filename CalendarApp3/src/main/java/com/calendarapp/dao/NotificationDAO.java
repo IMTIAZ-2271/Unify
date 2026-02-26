@@ -4,6 +4,7 @@ import com.calendarapp.model.Notification;
 import com.calendarapp.util.DB;
 
 import java.sql.*;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -65,6 +66,17 @@ public class NotificationDAO {
         }
     }
 
+    public void updateInviteAccepted(int userID, int groupID, int inviteAccepted) throws SQLException
+    {
+        try (Connection c = DB.conn(); PreparedStatement ps = c.prepareStatement(
+                "update notifications set invite_accepted=? where type='group_invite' && user_id=? && reference_id=?;")) {
+            ps.setInt(1, inviteAccepted);
+            ps.setInt(2,userID);
+            ps.setInt(3,groupID);
+            ps.executeUpdate();
+        }
+    }
+
     public void delete(int id) throws SQLException {
         try (Connection c = DB.conn(); PreparedStatement ps = c.prepareStatement(
                 "DELETE FROM notifications WHERE id=?")) {
@@ -80,10 +92,23 @@ public class NotificationDAO {
         n.setMessage(rs.getString("message"));
         n.setType(rs.getString("type"));
         n.setRead(rs.getBoolean("is_read"));
+        n.setInviteAccepted(rs.getInt("invite_accepted"));
         int rid = rs.getInt("reference_id");
         if (!rs.wasNull()) n.setReferenceId(rid);
         Timestamp ca = rs.getTimestamp("created_at");
         if (ca != null) n.setCreatedAt(ca.toLocalDateTime());
         return n;
+    }
+
+    public List<Notification> newSince(int uid, LocalDateTime since) throws SQLException {
+        String sql = "SELECT * FROM notifications WHERE user_id=? AND last_modified > ? ORDER BY created_at DESC";
+        List<Notification> list = new ArrayList<>();
+        try (Connection c = DB.conn(); PreparedStatement ps = c.prepareStatement(sql)) {
+            ps.setInt(1, uid);
+            ps.setTimestamp(2, Timestamp.valueOf(since));
+            ResultSet rs = ps.executeQuery();
+            while (rs.next()) list.add(map(rs));
+        }
+        return list;
     }
 }

@@ -70,17 +70,29 @@ public class NotificationsController {
 
         // ── Group invite: show Accept / Decline ──────────────────────────
         if ("group_invite".equals(n.getType()) && n.getReferenceId() != null) {
-            HBox actions = new HBox(8);
-            Button acc = new Button("✅ Accept");
-            acc.getStyleClass().add("btn-success-small");
-            acc.setOnAction(e -> acceptInvite(n));
+            if(n.getInviteAccepted()==0) {
+                HBox actions = new HBox(8);
+                Button acc = new Button("✅ Accept");
+                acc.getStyleClass().add("btn-success-small");
+                acc.setOnAction(e -> acceptInvite(n));
 
-            Button dec = new Button("❌ Decline");
-            dec.getStyleClass().add("btn-danger-small");
-            dec.setOnAction(e -> declineInvite(n));
+                Button dec = new Button("❌ Decline");
+                dec.getStyleClass().add("btn-danger-small");
+                dec.setOnAction(e -> declineInvite(n));
 
-            actions.getChildren().addAll(acc, dec);
-            body.getChildren().add(actions);
+                actions.getChildren().addAll(acc, dec);
+                body.getChildren().add(actions);
+            } else if (n.getInviteAccepted()==1) {
+                Label acc = new Label();
+                acc.setText("Accepted");
+                acc.getStyleClass().add("custom-label");
+                body.getChildren().add(acc);
+            } else if (n.getInviteAccepted()==-1) {
+                Label dec=new Label();
+                dec.setText("Declined");
+                dec.getStyleClass().add("custom-label");
+                body.getChildren().add(dec);
+            }
         } else {
             // ── Clickable hyperlink to navigate to source ──────────────
             String linkText = linkLabel(n.getType());
@@ -112,6 +124,7 @@ public class NotificationsController {
             int groupId = n.getReferenceId();
             groupDAO.addMember(groupId, Session.uid(), "member");
             dao.markRead(n.getId());
+            dao.updateInviteAccepted(n.getUserId(),groupId,1);
             // Navigate to the group
             load();
             try {
@@ -129,6 +142,7 @@ public class NotificationsController {
     private void declineInvite(Notification n) {
         try {
             dao.markRead(n.getId());
+            dao.updateInviteAccepted(n.getUserId(),n.getReferenceId() , -1);
             load();
         } catch (Exception e) { e.printStackTrace(); }
     }
@@ -153,7 +167,7 @@ public class NotificationsController {
                     if (n.getReferenceId() != null) {
                         Event e = eventDAO.findById(n.getReferenceId());
                         if (e != null) {
-                            EventDetailController ctrl = Navigator.showModal("/com/calendarapp/fxml/event_detail.fxml");
+                            EventDetailController ctrl = Navigator.showWindow("/com/calendarapp/fxml/event_detail.fxml");
                             if (ctrl != null) ctrl.setEvent(e);
                         }
                     }

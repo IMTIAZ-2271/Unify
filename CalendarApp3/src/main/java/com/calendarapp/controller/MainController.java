@@ -1,6 +1,7 @@
 package com.calendarapp.controller;
 
 import com.calendarapp.App;
+import com.calendarapp.AppData;
 import com.calendarapp.Navigator;
 import com.calendarapp.Session;
 import com.calendarapp.dao.NotificationDAO;
@@ -12,10 +13,13 @@ import javafx.fxml.FXML;
 import javafx.scene.control.Label;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
+import javafx.scene.layout.HBox;
 import javafx.scene.layout.StackPane;
 
 public class MainController {
 
+    public StackPane overlayArea2;
+    public HBox profileNameAndPictureCell;
     @FXML private StackPane contentArea;
     @FXML private StackPane overlayArea;
     @FXML private Label     userNameLabel;
@@ -30,7 +34,8 @@ public class MainController {
 
         userNameLabel.setText(Session.currentUser().getDisplayName());
         Image img = Imgs.fromBytes(Session.currentUser().getProfilePicture());
-        if (img != null) userAvatar.setImage(img);
+        if (img != null)
+            userAvatar.setImage(img);
         Imgs.circle(userAvatar, 18);
 
         NotificationService.get().setBadgeUpdater(count -> {
@@ -49,15 +54,17 @@ public class MainController {
     @FXML public void doLogout() {
         try {
             NotificationService.get().stop();
-            SessionStore.clear();   // forget auto-login
+            SessionStore.clear();
             Session.logout();
             App.showLogin();
+            MonthViewController.refreshCheckbox();
+            AppData.get().clear();
         } catch (Exception e) { e.printStackTrace(); }
     }
 
     public void refreshBadge() {
         try {
-            int n = notifDAO.unreadCount(Session.uid());
+            int n = AppData.get().getUnreadCount();
             Platform.runLater(() -> {
                 notifBadge.setText(n > 0 ? String.valueOf(n) : "");
                 notifBadge.setVisible(n > 0);

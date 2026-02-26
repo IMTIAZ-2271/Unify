@@ -21,12 +21,12 @@
 /* ── Inputs ── */
 .input {
     -fx-background-color: #F8FAFC;
-    -fx-border-color: #CBD5E1;
+    -fx-border-color: #f0f2f4;
     -fx-border-radius: 8;
     -fx-background-radius: 8;
     -fx-padding: 10 14;
     -fx-font-size: 13px;
-    -fx-font-weight: normal;
+    -fx-font-weight: 600;
 }
 .input:focused {
     -fx-border-color: #3B82F6;
@@ -35,9 +35,23 @@
 }
 
 /* ── Labels ── */
-.field-label { -fx-text-fill: #475569; -fx-font-weight: bold; -fx-font-size: 12px; }
+.field-label { -fx-text-fill: #0e1215; -fx-font-weight: bold; -fx-font-size: 12px; }
 .err  { -fx-text-fill: #EF4444; -fx-font-size: 12px; -fx-font-weight: normal; }
 .ok   { -fx-text-fill: #22C55E; -fx-font-size: 12px; }
+/* style.css */
+.custom-label {
+    -fx-font-size: 10px;
+    -fx-font-family: "Arial";
+    -fx-text-fill: #2c3e50; /* Dark blue-grey text */
+    -fx-font-weight: bold;
+    -fx-background-color: #ecf0f1; /* Light grey background */
+    -fx-padding: 5px;
+    -fx-border-color: #b7ccda;
+    -fx-border-width: 2px;
+    -fx-border-radius: 3px;
+    -fx-background-radius: 3px;
+}
+
 
 /* ── Buttons – full size ── */
 .btn-primary {

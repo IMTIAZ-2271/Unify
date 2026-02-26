@@ -1,16 +1,17 @@
 <?xml version="1.0" encoding="UTF-8"?>
+
 <?import javafx.scene.control.*?>
-<?import javafx.scene.layout.*?>
 <?import javafx.scene.image.*?>
-<StackPane xmlns:fx="http://javafx.com/fxml"
-           fx:controller="com.calendarapp.controller.MainController">
+<?import javafx.scene.layout.*?>
+
+<StackPane xmlns="http://javafx.com/javafx/17.0.12" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.calendarapp.controller.MainController">
 
     <BorderPane>
         <left>
-            <VBox styleClass="sidebar" prefWidth="210" spacing="2">
-                <HBox styleClass="sidebar-logo" alignment="CENTER_LEFT" spacing="10">
-                    <Label text="📅" style="-fx-font-size:26;"/>
-                    <Label text="CalendarApp" style="-fx-text-fill:white;-fx-font-weight:bold;-fx-font-size:15;"/>
+            <VBox prefWidth="210" spacing="2" styleClass="sidebar">
+                <HBox alignment="CENTER_LEFT" spacing="10" styleClass="sidebar-logo">
+                    <Label style="-fx-font-size:26;" text="📅" />
+                    <Label style="-fx-text-fill:white;-fx-font-weight:bold;-fx-font-size:15;" text="Unify" />
                 </HBox>
                 <HBox fx:id="profileNameAndPictureCell" alignment="CENTER_LEFT" onMouseClicked="#showProfile" spacing="10" styleClass="sidebar-user">
                     <StackPane>
@@ -18,29 +19,26 @@
                     </StackPane>
                     <Label fx:id="userNameLabel" maxWidth="130" style="-fx-text-fill:white;-fx-font-weight:bold;" />
                 </HBox>
-                <Separator style="-fx-opacity:0.3;"/>
-                <Button text="📅  Calendar"       styleClass="sbar-btn" maxWidth="Infinity" onAction="#showCalendar"/>
-                <Button text="👥  Groups"         styleClass="sbar-btn" maxWidth="Infinity" onAction="#showGroups"/>
-                <Button text="👤  Profile"        styleClass="sbar-btn" maxWidth="Infinity" onAction="#showProfile"/>
+                <Separator style="-fx-opacity:0.3;" />
+                <Button maxWidth="Infinity" onAction="#showCalendar" styleClass="sbar-btn" text="📅  Calendar" />
+                <Button maxWidth="Infinity" onAction="#showGroups" styleClass="sbar-btn" text="👥  Groups" />
+                <Button maxWidth="Infinity" onAction="#showProfile" styleClass="sbar-btn" text="👤  Profile" />
                 <StackPane>
-                    <Button text="🔔  Notifications" styleClass="sbar-btn" maxWidth="Infinity" onAction="#showNotifications"/>
-                    <Label fx:id="notifBadge" styleClass="badge" StackPane.alignment="TOP_RIGHT"
-                           style="-fx-translate-x:-8;-fx-translate-y:4;"/>
+                    <Button maxWidth="Infinity" onAction="#showNotifications" styleClass="sbar-btn" text="🔔  Notifications" />
+                    <Label fx:id="notifBadge" style="-fx-translate-x:-8;-fx-translate-y:4;" styleClass="badge" StackPane.alignment="TOP_RIGHT" />
                 </StackPane>
-                <Region VBox.vgrow="ALWAYS"/>
-                <Separator style="-fx-opacity:0.3;"/>
-                <Button text="🚪  Logout" styleClass="sbar-btn-danger" maxWidth="Infinity" onAction="#doLogout"/>
+                <Region VBox.vgrow="ALWAYS" />
+                <Separator style="-fx-opacity:0.3;" />
+                <Button maxWidth="Infinity" onAction="#doLogout" styleClass="sbar-btn-danger" text="🚪  Logout" />
             </VBox>
         </left>
-        <center>
-            <StackPane fx:id="contentArea" style="-fx-background-color:#F8FAFC;"/>
-        </center>
+      <center>
+            <StackPane fx:id="contentArea" style="-fx-background-color:#F8FAFC;" BorderPane.alignment="CENTER" />
+      </center>
     </BorderPane>
 
     <!-- Modal overlay - Navigator controls visibility -->
-    <StackPane fx:id="overlayArea"
-               style="-fx-background-color:rgba(0,0,0,0.48);"
-               alignment="CENTER"
-               visible="false"/>
+    <StackPane fx:id="overlayArea2" alignment="CENTER" style="-fx-background-color:rgba(0,0,0,0.48);" visible="false" />
+      <StackPane fx:id="overlayArea" style="-fx-background-color:rgba(0,0,0,0.48);" visible="false" />
 
 </StackPane>

@@ -7,10 +7,9 @@ import com.calendarapp.model.User;
 import com.calendarapp.util.Crypto;
 import com.calendarapp.util.SessionStore;
 import javafx.fxml.FXML;
-import javafx.scene.Parent;
-import javafx.scene.Scene;
 import javafx.scene.control.*;
-import javafx.stage.Stage;
+
+import java.io.IOException;
 
 public class RegisterController {
 
@@ -47,7 +46,7 @@ public class RegisterController {
             if (user != null) {
                 Session.login(user);
                 SessionStore.save(user.getId());
-                App.showMain();
+                App.goToMain();
             }
         } catch (Exception ex) {
             err("Error: " + ex.getMessage());
@@ -57,15 +56,16 @@ public class RegisterController {
         }
     }
 
-    @FXML private void goLogin() {
-        try {
+    @FXML private void goLogin() throws IOException {
+        /*try {
             Parent root = App.load("/com/calendarapp/fxml/login.fxml");
-            Scene scene = new Scene(root, 900, 580);
-            scene.getStylesheets().add(App.class.getResource("/com/calendarapp/css/styles.css").toExternalForm());
+            Scene scene = new Scene(root, 900 , 620);
+            scene.getStylesheets().add(Objects.requireNonNull(App.class.getResource("/com/calendarapp/css/styles.css")).toExternalForm());
             Stage stage = (Stage) registerBtn.getScene().getWindow();
             stage.setScene(scene);
-            stage.setTitle("CalendarApp — Sign In");
-        } catch (Exception ex) { ex.printStackTrace(); }
+            stage.setTitle("Unify — Sign In");
+        } catch (Exception ex) { ex.printStackTrace(); }*/
+        App.showLogin();
     }
 
     private void err(String msg) { errorLabel.setText(msg); errorLabel.setVisible(true); }

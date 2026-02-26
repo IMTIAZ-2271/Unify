@@ -1,11 +1,13 @@
 package com.calendarapp.dao;
 
+import com.calendarapp.Session;
 import com.calendarapp.model.Group;
 import com.calendarapp.model.JoinRequest;
 import com.calendarapp.model.User;
 import com.calendarapp.util.DB;
 
 import java.sql.*;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -66,17 +68,27 @@ public class GroupDAO {
     }
 
     public List<Group> search(String q, int uid) throws SQLException {
-        String full = "SELECT g.*, "
-            + "(SELECT COUNT(*) FROM group_members WHERE group_id=g.id) AS mc, "
-            + "(SELECT role FROM group_members WHERE group_id=g.id AND user_id=?) AS ur, "
-            + "pg.name AS parent_name "
-            + "FROM groups_tbl g "
-            + "LEFT JOIN groups_tbl pg ON g.parent_group_id=pg.id "
-            + "WHERE g.name LIKE ? OR g.group_code LIKE ? LIMIT 30";
+//        String full = "SELECT g.*, "
+//            + "(SELECT COUNT(*) FROM group_members WHERE group_id=g.id) AS mc, "
+//            + "(SELECT role FROM group_members WHERE group_id=g.id AND user_id=?) AS ur, "
+//            + "pg.name AS parent_name "
+//            + "FROM groups_tbl g "
+//            + "LEFT JOIN groups_tbl pg ON g.parent_group_id=pg.id "
+//            + "WHERE g.name LIKE ? OR g.group_code LIKE ? LIMIT 30";
+
+
+        String full="SELECT DISTINCT g.* "
+                + "FROM groups_tbl g "
+                + "LEFT JOIN group_members gm "
+                + "ON g.parent_group_id = gm.group_id "
+ //               + "AND gm.user_id = ? "
+                + "WHERE (g.name LIKE ? OR g.group_code LIKE ?)"
+                + "AND (g.parent_group_id IS NULL OR ? )";
         List<Group> list = new ArrayList<>();
         try (Connection c = DB.conn(); PreparedStatement ps = c.prepareStatement(full)) {
             String w = "%" + q + "%";
-            ps.setInt(1, uid); ps.setString(2, w); ps.setString(3, w);
+//            ps.setInt(1, Session.uid());
+            ps.setString(1, w); ps.setString(2, w); ps.setInt(3, uid);
             ResultSet rs = ps.executeQuery();
             while (rs.next()) list.add(map(rs));
         }
@@ -274,4 +286,72 @@ public class GroupDAO {
         if (ra != null) r.setRequestedAt(ra.toLocalDateTime());
         return r;
     }
+
+
+
+
+    /**
+     * Returns all groups the user belongs to that have changed since the given time.
+     * Covers: group details updated, membership changes, role changes.
+     */
+    public List<Group> changedSince(int uid, LocalDateTime since) throws SQLException {
+        String sql =
+                "SELECT g.*, "
+                        + "(SELECT COUNT(*) FROM group_members WHERE group_id=g.id) AS mc, "
+                        + "(SELECT role FROM group_members WHERE group_id=g.id AND user_id=?) AS ur, "
+                        + "pg.name AS parent_name "
+                        + "FROM groups_tbl g "
+                        + "LEFT JOIN groups_tbl pg ON g.parent_group_id=pg.id "
+                        + "WHERE g.id IN ( "
+                        + "    SELECT DISTINCT gm.group_id FROM group_members gm "
+                        + "    WHERE gm.user_id=? "          // user is a member
+                        + ") "
+                        + "AND ( "
+                        + "    g.last_modified > ? "          // group details changed
+                        + "    OR EXISTS ( "                  // membership/roles changed
+                        + "        SELECT 1 FROM group_members gm2 "
+                        + "        WHERE gm2.group_id=g.id "
+                        + "        AND gm2.last_modified > ? "
+                        + "    ) "
+                        + ")";
+
+        List<Group> list = new ArrayList<>();
+        try (Connection c = DB.conn(); PreparedStatement ps = c.prepareStatement(sql)) {
+            ps.setInt(1, uid);
+            ps.setInt(2, uid);
+            ps.setTimestamp(3, Timestamp.valueOf(since));
+            ps.setTimestamp(4, Timestamp.valueOf(since));
+            ResultSet rs = ps.executeQuery();
+            while (rs.next()) list.add(map(rs));
+        }
+        return list;
+    }
+
+    /**
+     * Returns pending join requests for groups the user admins,
+     * that arrived or changed since the given time.
+     */
+    public List<JoinRequest> joinRequestsChangedSince(int adminUid, LocalDateTime since)
+            throws SQLException {
+        String sql =
+                "SELECT jr.*, u.username, u.display_name, u.profile_picture, g.name AS gname "
+                        + "FROM join_requests jr "
+                        + "JOIN users u ON jr.user_id=u.id "
+                        + "JOIN groups_tbl g ON jr.group_id=g.id "
+                        + "JOIN group_members gm ON g.id=gm.group_id "
+                        + "    AND gm.user_id=? AND gm.role='admin' "
+                        + "WHERE jr.last_modified > ? "
+                        + "AND jr.status='pending' "
+                        + "ORDER BY jr.requested_at DESC";
+
+        List<JoinRequest> list = new ArrayList<>();
+        try (Connection c = DB.conn(); PreparedStatement ps = c.prepareStatement(sql)) {
+            ps.setInt(1, adminUid);
+            ps.setTimestamp(2, Timestamp.valueOf(since));
+            ResultSet rs = ps.executeQuery();
+            while (rs.next()) list.add(mapJR(rs));
+        }
+        return list;
+    }
+
 }
