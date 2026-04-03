@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<VBox spacing="15" style="-fx-background-color: #F8FAFC; -fx-padding: 20;" xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.Unify.controller.CanteenController">
+
+    <HBox alignment="CENTER_LEFT" spacing="15">
+        <Button text="⬅ Back" onAction="#goBack" styleClass="btn-outline-small"/>
+        <Label text="Campus Canteens" style="-fx-font-size: 24; -fx-font-weight: bold; -fx-text-fill: #1E293B;"/>
+        <Region HBox.hgrow="ALWAYS"/>
+        <Label text="Select Group: " style="-fx-font-weight: bold;"/>
+        <ComboBox fx:id="groupComboBox" prefWidth="200"/>
+    </HBox>
+
+    <ScrollPane vbarPolicy="NEVER" hbarPolicy="AS_NEEDED" style="-fx-background-color: transparent; -fx-border-color: transparent;">
+        <HBox fx:id="canteenButtonBar" spacing="10" alignment="CENTER_LEFT">
+            </HBox>
+    </ScrollPane>
+
+    <HBox alignment="CENTER_LEFT" spacing="15">
+        <TextField fx:id="searchField" promptText="🔍 Search food..." prefWidth="250"/>
+        <Region HBox.hgrow="ALWAYS"/>
+
+        <Button fx:id="ordersBtn" text="📦 Orders" onAction="#showOrders" styleClass="btn-outline-small"/>
+
+        <Button fx:id="addFoodBtn" text="➕ Add Food Item" onAction="#handleAddFood" visible="false" managed="false" style="-fx-background-color: #3B82F6; -fx-text-fill: white;"/>
+        <Button fx:id="cartButton" text="🛒 Cart (0)" onAction="#showCart" style="-fx-background-color: #F59E0B; -fx-text-fill: white; -fx-font-weight: bold;"/>
+    </HBox>
+    <TableView fx:id="foodsTable" VBox.vgrow="ALWAYS" style="-fx-background-color: white;">
+        <columns>
+            <TableColumn fx:id="colName" text="Food Name" prefWidth="250"/>
+            <TableColumn fx:id="colPrice" text="Price (৳)" prefWidth="100"/>
+            <TableColumn fx:id="colCanteen" text="Canteen" prefWidth="150"/>
+            <TableColumn fx:id="colAvail" text="Available" prefWidth="100"/>
+            <TableColumn fx:id="colAction" text="Action" prefWidth="80"/>
+        </columns>
+    </TableView>
+
+    <Label fx:id="statusLabel" text="Select a group to load canteens." style="-fx-text-fill: #64748B;"/>
+</VBox>

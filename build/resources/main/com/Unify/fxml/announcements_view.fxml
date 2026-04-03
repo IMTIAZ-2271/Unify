@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.image.ImageView?>
+
+<HBox xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.Unify.controller.AnnouncementsController" style="-fx-background-color: white;">
+
+    <VBox prefWidth="280" style="-fx-border-color: #E2E8F0; -fx-border-width: 0 1 0 0; -fx-background-color: #F8FAFC;">
+        <VBox spacing="10" style="-fx-padding: 15;">
+            <Label text="Announcements" style="-fx-font-size: 20; -fx-font-weight: bold; -fx-text-fill: #1E293B;"/>
+            <TextField fx:id="searchGroupField" promptText="🔍 Search groups..." style="-fx-background-radius: 15; -fx-padding: 8 12;"/>
+        </VBox>
+        <ListView fx:id="groupListView" VBox.vgrow="ALWAYS" style="-fx-background-color: transparent; -fx-border-color: transparent;"/>
+    </VBox>
+
+    <VBox HBox.hgrow="ALWAYS" fx:id="announcementArea" visible="false">
+
+        <HBox alignment="CENTER_LEFT" spacing="15" style="-fx-padding: 10 20; -fx-background-color: white; -fx-border-color: #E2E8F0; -fx-border-width: 0 0 1 0;">
+            <StackPane>
+                <ImageView fx:id="headerAvatar" fitHeight="42" fitWidth="42"/>
+            </StackPane>
+            <VBox HBox.hgrow="ALWAYS" alignment="CENTER_LEFT">
+                <Label fx:id="headerName" style="-fx-font-size: 18; -fx-font-weight: bold; -fx-text-fill: #1E293B;"/>
+                <Label fx:id="headerSub" style="-fx-text-fill: #64748B; -fx-font-size: 12;"/>
+            </VBox>
+            <Button fx:id="newAnnouncementBtn" text="➕ New Announcement" onAction="#showPostForm" style="-fx-background-color: #3B82F6; -fx-text-fill: white; -fx-font-weight: bold; -fx-cursor: hand; -fx-padding: 8 15; -fx-background-radius: 5;" visible="false"/>
+        </HBox>
+
+        <VBox fx:id="postFormBox" spacing="10" style="-fx-padding: 15; -fx-background-color: #F1F5F9; -fx-border-color: #E2E8F0; -fx-border-width: 0 0 1 0;" visible="false" managed="false">
+            <Label text="Create Official Announcement" style="-fx-font-weight: bold; -fx-text-fill: #3B82F6; -fx-font-size: 14;"/>
+            <TextField fx:id="titleField" promptText="Announcement Title..." style="-fx-padding: 8;"/>
+            <TextArea fx:id="contentArea" promptText="What's the news?" prefRowCount="3" style="-fx-padding: 5;"/>
+            <HBox spacing="10" alignment="CENTER_RIGHT">
+                <Button text="Cancel" onAction="#hidePostForm" style="-fx-background-color: transparent; -fx-text-fill: #64748B; -fx-cursor: hand; -fx-font-weight: bold;"/>
+                <Button text="Post Now" onAction="#postAnnouncement" style="-fx-background-color: #10B981; -fx-text-fill: white; -fx-font-weight: bold; -fx-cursor: hand; -fx-padding: 8 15; -fx-background-radius: 5;"/>
+            </HBox>
+        </VBox>
+
+        <ScrollPane fitToWidth="true" VBox.vgrow="ALWAYS" style="-fx-background: #F8FAFC; -fx-background-color: #F8FAFC;">
+            <VBox fx:id="announcementsList" spacing="15" style="-fx-padding: 20; -fx-background-color: #F8FAFC;"/>
+        </ScrollPane>
+    </VBox>
+
+    <VBox fx:id="placeholderArea" HBox.hgrow="ALWAYS" alignment="CENTER" style="-fx-background-color: #F8FAFC;">
+        <Label text="Select a group to view announcements" style="-fx-font-size: 18; -fx-text-fill: #94A3B8;"/>
+    </VBox>
+
+</HBox>

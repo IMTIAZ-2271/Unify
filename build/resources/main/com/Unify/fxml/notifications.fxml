@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<VBox xmlns:fx="http://javafx.com/fxml"
+      fx:controller="com.Unify.controller.NotificationsController"
+      style="-fx-background-color:white;" spacing="0">
+
+    <HBox styleClass="panel-header" alignment="CENTER_LEFT" spacing="10">
+        <Label text="Notifications" styleClass="panel-title"/>
+        <Region HBox.hgrow="ALWAYS"/>
+        <Button text="↻ Refresh" styleClass="btn-outline-sm" onAction="#doRefresh"/>
+        <Button text="✓ Mark All Read" styleClass="btn-outline-sm" onAction="#doMarkAll"/>
+        <ComboBox fx:id="timeFilter" promptText="Filter by Date..." onAction="#doRefresh" style="-fx-background-color: white; -fx-border-color: #cbd5e1; -fx-border-radius: 4;"/>
+    </HBox>
+
+    <ScrollPane fitToWidth="true" VBox.vgrow="ALWAYS"
+                style="-fx-background:white;-fx-background-color:white;">
+        <VBox spacing="0">
+            <Label fx:id="emptyLabel" text="No notifications yet."
+                   style="-fx-text-fill:#aaa;-fx-font-size:14;-fx-padding:40;"/>
+            <VBox fx:id="list" spacing="0"/>
+        </VBox>
+    </ScrollPane>
+</VBox>
