@@ -8,6 +8,8 @@
 <VBox alignment="CENTER" spacing="15.0" style="-fx-padding: 20; -fx-background-color: #F8FAFC;" xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.Unify.controller.TransportController">
 
     <HBox alignment="CENTER_LEFT" spacing="15">
+        <Button text="⬅ Back" onAction="#goBack" styleClass="btn-outline-small"/>
+
         <Label text="Bus Schedules" textFill="#2c3e50">
             <font><Font name="System Bold" size="24.0" /></font>
         </Label>

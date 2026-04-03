@@ -16,7 +16,7 @@
 
             <HBox fx:id="adminControls" spacing="10" visible="false" managed="false">
                 <Button text="➕ Add Book" onAction="#handleAddBook" styleClass="btn-primary"/>
-                <Button text="⚙ Settings" onAction="#handleSettingsClick" styleClass="btn-secondary"/>
+                <Button text="📦 Requests" onAction="#showRequests" styleClass="btn-secondary" style="-fx-background-color: #3B82F6; -fx-text-fill: white; -fx-font-weight: bold;"/>
             </HBox>
         </HBox>
     </top>

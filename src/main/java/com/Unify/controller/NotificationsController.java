@@ -46,7 +46,16 @@ public class NotificationsController {
     private void doMarkAll() {
         try {
             dao.markAllRead(Session.uid());
+
+            // 🛠️ FIX: Update the local cache so the screen instantly redraws correctly!
+            if (AppData.get().getNotifications() != null) {
+                for (Notification cached : AppData.get().getNotifications()) {
+                    cached.setRead(true);
+                }
+            }
+
             load();
+            com.Unify.service.NotificationService.get().refreshBadge();
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -153,6 +162,14 @@ public class NotificationsController {
                         dao.updateNotificationState(n.getId(), 1);
                         n.setInviteAccepted(1);
 
+                        // 🛠️ FIX: Update the local cache so the "Approved" state sticks!
+                        for (Notification cached : AppData.get().getNotifications()) {
+                            if (cached.getId() == n.getId()) {
+                                cached.setInviteAccepted(1);
+                                break;
+                            }
+                        }
+
                         btnApprove.setText("Approved");
                         btnApprove.setDisable(true);
                         btnReject.setVisible(false);
@@ -177,6 +194,14 @@ public class NotificationsController {
                         dao.updateNotificationState(n.getId(), -1);
                         n.setInviteAccepted(-1);
 
+                        // 🛠️ FIX: Update the local cache so the "Rejected" state sticks!
+                        for (Notification cached : AppData.get().getNotifications()) {
+                            if (cached.getId() == n.getId()) {
+                                cached.setInviteAccepted(-1);
+                                break;
+                            }
+                        }
+
                         btnReject.setText("Rejected");
                         btnReject.setDisable(true);
                         btnApprove.setVisible(false);
@@ -185,7 +210,6 @@ public class NotificationsController {
                         ex.printStackTrace();
                     }
                 });
-
                 actions.getChildren().addAll(btnApprove, btnReject);
                 body.getChildren().add(actions);
 
@@ -264,7 +288,17 @@ public class NotificationsController {
             groupDAO.addMember(groupId, Session.uid(), "member");
             AppData.get().markNotificationRead(n.getId());
             dao.updateInviteAccepted(n.getUserId(), groupId, 1);
+
+            // 🛠️ FIX: Update the cache so the "Accepted" label stays!
+            for (Notification cached : AppData.get().getNotifications()) {
+                if (cached.getId() == n.getId()) {
+                    cached.setInviteAccepted(1);
+                    break;
+                }
+            }
+
             load();
+            // ... rest of your code
             try {
                 Group g = groupDAO.findById(groupId, Session.uid());
                 if (g != null) {

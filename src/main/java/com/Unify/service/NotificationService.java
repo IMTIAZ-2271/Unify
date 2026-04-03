@@ -57,6 +57,7 @@ public void start() {
         if (executor != null && !executor.isShutdown()) {
             executor.shutdownNow(); // Kill the thread when logging out
         }
+        alerted.clear();
     }
 
 

@@ -17,6 +17,7 @@ import javafx.fxml.Initializable;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
+import com.Unify.Navigator;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
@@ -172,6 +173,10 @@ public class TransportController implements Initializable {
         }
     }
 
+    @FXML
+    public void goBack(){
+        Navigator.goTo("/com/Unify/fxml/utility.fxml");
+    }
     @FXML
     private void handleAddBus() {
         if (currentGroup != null) openBusForm(null);

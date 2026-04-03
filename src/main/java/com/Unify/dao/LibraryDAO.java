@@ -54,18 +54,50 @@ public class LibraryDAO {
 
     // ─── Request a book (Returns the new Issue ID) ───────────────────────────
     public int requestBook(int bookId, int userId) throws SQLException {
-        String sql = "INSERT INTO book_issues (book_id, user_id, status) VALUES (?, ?, 'pending')";
-        // Notice we added Statement.RETURN_GENERATED_KEYS
-        try (Connection c = DB.conn(); PreparedStatement ps = c.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
-            ps.setInt(1, bookId);
-            ps.setInt(2, userId);
-            ps.executeUpdate();
-            ResultSet rs = ps.getGeneratedKeys();
-            if (rs.next()) return rs.getInt(1); // Return the ID so we can put it in the notification!
-        }
-        return -1;
-    }
+        // We now check inventory, decrement copies, and insert the request ATOMICALLY
+        String checkSql = "SELECT available_copies FROM books WHERE id = ? FOR UPDATE";
+        String updateSql = "UPDATE books SET available_copies = available_copies - 1 WHERE id = ?";
+        String insertSql = "INSERT INTO book_issues (book_id, user_id, status) VALUES (?, ?, 'pending')";
 
+        try (Connection c = DB.conn()) {
+            c.setAutoCommit(false); // Start transaction
+            try (PreparedStatement checkPs = c.prepareStatement(checkSql);
+                 PreparedStatement updatePs = c.prepareStatement(updateSql);
+                 PreparedStatement insertPs = c.prepareStatement(insertSql, Statement.RETURN_GENERATED_KEYS)) {
+
+                checkPs.setInt(1, bookId);
+                ResultSet rs = checkPs.executeQuery();
+
+                // If the book is actually in stock, proceed with checkout
+                if (rs.next() && rs.getInt("available_copies") > 0) {
+
+                    // 1. Immediately reserve the book by reducing available_copies
+                    updatePs.setInt(1, bookId);
+                    updatePs.executeUpdate();
+
+                    // 2. Create the pending issue record
+                    insertPs.setInt(1, bookId);
+                    insertPs.setInt(2, userId);
+                    insertPs.executeUpdate();
+
+                    ResultSet keys = insertPs.getGeneratedKeys();
+                    int issueId = -1;
+                    if (keys.next()) issueId = keys.getInt(1);
+
+                    c.commit(); // Save changes
+                    return issueId;
+                } else {
+                    c.rollback(); // Cancel if out of stock
+                    return -1;
+                }
+            } catch (SQLException e) {
+                c.rollback();
+                throw e;
+            } finally {
+                c.setAutoCommit(true);
+            }
+        }
+    }
 
     // ─── Fetch Pending Requests (For Admins) ─────────────────────────────────
     public List<BookIssue> getPendingRequests(int groupId) throws SQLException {
@@ -88,7 +120,12 @@ public class LibraryDAO {
                 // The two new fields we just added!
                 issue.setBookTitle(rs.getString("title"));
                 issue.setRequesterName(rs.getString("display_name"));
+                Timestamp reqTime = rs.getTimestamp("requested_at");
+                if (reqTime != null) {
+                    issue.setRequestedAt(reqTime.toLocalDateTime());
+                }
                 requests.add(issue);
+
             }
         }
         return requests;
@@ -120,23 +157,20 @@ public class LibraryDAO {
             // 2. Update the library tables ATOMICALLY
             if (bookId != -1) {
                 if (approve) {
-                    // CONCURRENCY FIX: Check if copies are available at the exact moment of update
-                    try (PreparedStatement ps2 = c.prepareStatement("UPDATE books SET available_copies = available_copies - 1 WHERE id = ? AND available_copies > 0")) {
-                        ps2.setInt(1, bookId);
-                        int rowsAffected = ps2.executeUpdate();
-                        if (rowsAffected == 0) {
-                            // If 0 rows updated, it means available_copies was already 0!
-                            throw new SQLException("OUT_OF_STOCK");
-                        }
-                    }
+                    // Since the book was ALREADY subtracted during checkout, we just mark it as issued
                     try (PreparedStatement ps1 = c.prepareStatement("UPDATE book_issues SET status = 'issued', issued_at = CURRENT_TIMESTAMP WHERE id = ?")) {
                         ps1.setInt(1, issueId);
                         ps1.executeUpdate();
                     }
                 } else {
+                    // If REJECTED, update the status AND refund the book back to the available pool
                     try (PreparedStatement ps = c.prepareStatement("UPDATE book_issues SET status = 'rejected' WHERE id = ?")) {
                         ps.setInt(1, issueId);
                         ps.executeUpdate();
+                    }
+                    try (PreparedStatement ps2 = c.prepareStatement("UPDATE books SET available_copies = available_copies + 1 WHERE id = ?")) {
+                        ps2.setInt(1, bookId);
+                        ps2.executeUpdate();
                     }
                 }
             }
@@ -155,6 +189,29 @@ public class LibraryDAO {
         } finally {
             if (c != null) c.setAutoCommit(true);
             if (c != null) c.close();
+        }
+    }
+
+    // ─── Update an existing book ─────────────────────────────────────────────
+    public void updateBook(int bookId, String title, String author, String description, int totalCopies, int availableCopies) throws SQLException {
+        String sql = "UPDATE books SET title=?, author=?, description=?, total_copies=?, available_copies=? WHERE id=?";
+        try (Connection c = DB.conn(); PreparedStatement ps = c.prepareStatement(sql)) {
+            ps.setString(1, title);
+            ps.setString(2, author);
+            ps.setString(3, description);
+            ps.setInt(4, totalCopies);
+            ps.setInt(5, availableCopies); // NEW
+            ps.setInt(6, bookId);
+            ps.executeUpdate();
+        }
+    }
+
+    // ─── Delete a book ───────────────────────────────────────────────────────
+    public void deleteBook(int bookId) throws SQLException {
+        String sql = "DELETE FROM books WHERE id=?";
+        try (Connection c = DB.conn(); PreparedStatement ps = c.prepareStatement(sql)) {
+            ps.setInt(1, bookId);
+            ps.executeUpdate();
         }
     }
 }
