@@ -73,9 +73,10 @@ public class NotificationDAO {
         }
     }
 
+    // In NotificationDAO.java
     public void updateInviteAccepted(int userID, int groupID, int inviteAccepted) throws SQLException {
         try (Connection c = DB.conn(); PreparedStatement ps = c.prepareStatement(
-                "update notifications set invite_accepted=? where type='group_invite' && user_id=? && reference_id=?;")) {
+                "UPDATE notifications SET invite_accepted=? WHERE type='group_invite' AND user_id=? AND reference_id=?")) {
             ps.setInt(1, inviteAccepted);
             ps.setInt(2, userID);
             ps.setInt(3, groupID);

@@ -110,15 +110,22 @@ public class CanteenController {
         foodsTable.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN);
 
         colAction.setCellFactory(param -> new TableCell<>() {
-            private final Button buyBtn = new Button("+");
+            private final Button buyBtn = new Button("Order");
             private final Button editBtn = new Button("Edit");
             private final Button delBtn = new Button("Delete");
             private final HBox manageBox = new HBox(5, editBtn, delBtn);
 
             {
-                buyBtn.setStyle("-fx-background-color: #10B981; -fx-text-fill: white; -fx-cursor: hand;");
-                editBtn.setStyle("-fx-background-color: #F59E0B; -fx-text-fill: white; -fx-cursor: hand;");
-                delBtn.setStyle("-fx-background-color: #EF4444; -fx-text-fill: white; -fx-cursor: hand;");
+                // Minimalist Table Buttons
+                buyBtn.setStyle("-fx-background-color: transparent; -fx-text-fill: #10B981; -fx-font-weight: bold; -fx-cursor: hand;");
+
+                editBtn.setStyle("-fx-background-color: transparent; -fx-text-fill: #64748B; -fx-font-weight: bold; -fx-cursor: hand;");
+                editBtn.setOnMouseEntered(e -> editBtn.setStyle("-fx-background-color: transparent; -fx-text-fill: #3B82F6; -fx-font-weight: bold; -fx-cursor: hand; -fx-underline: true;"));
+                editBtn.setOnMouseExited(e -> editBtn.setStyle("-fx-background-color: transparent; -fx-text-fill: #64748B; -fx-font-weight: bold; -fx-cursor: hand; -fx-underline: false;"));
+
+                delBtn.setStyle("-fx-background-color: transparent; -fx-text-fill: #64748B; -fx-font-weight: bold; -fx-cursor: hand;");
+                delBtn.setOnMouseEntered(e -> delBtn.setStyle("-fx-background-color: transparent; -fx-text-fill: #EF4444; -fx-font-weight: bold; -fx-cursor: hand; -fx-underline: true;"));
+                delBtn.setOnMouseExited(e -> delBtn.setStyle("-fx-background-color: transparent; -fx-text-fill: #64748B; -fx-font-weight: bold; -fx-cursor: hand; -fx-underline: false;"));
 
                 buyBtn.setOnAction(e -> {
                     FoodItem food = getTableView().getItems().get(getIndex());
@@ -132,7 +139,7 @@ public class CanteenController {
                         food.setAvailableQty(food.getAvailableQty() - 1);
                         foodsTable.refresh();
                         int totalCartItems = cart.stream().mapToInt(FoodItem::getCartQuantity).sum();
-                        cartButton.setText("Cart (" + totalCartItems + ")");
+                        cartButton.setText("🛒 Cart (" + totalCartItems + ")");
                     } else {
                         showAlert(Alert.AlertType.WARNING, "Sold Out", "This item is currently out of stock.");
                     }
@@ -183,19 +190,21 @@ public class CanteenController {
             boolean isAdmin = groupDAO.isAdmin(group.getId(), userId);
 
             Button allBtn = new Button("All Canteens");
+            allBtn.setStyle("-fx-background-color: transparent; -fx-text-fill: #1E293B; -fx-font-weight: bold; -fx-cursor: hand; -fx-padding: 5 10; -fx-border-color: #E2E8F0; -fx-border-width: 1; -fx-border-radius: 5;");
             allBtn.setOnAction(e -> loadFoods(0, "All Canteens"));
             canteenButtonBar.getChildren().add(allBtn);
 
             List<Canteen> canteens = canteenDAO.getCanteensByGroup(group.getId());
             for (Canteen c : canteens) {
                 Button btn = new Button(c.getName());
+                btn.setStyle("-fx-background-color: transparent; -fx-text-fill: #1E293B; -fx-font-weight: bold; -fx-cursor: hand; -fx-padding: 5 10; -fx-border-color: #E2E8F0; -fx-border-width: 1; -fx-border-radius: 5;");
                 btn.setOnAction(e -> loadFoods(c.getId(), c.getName()));
                 canteenButtonBar.getChildren().add(btn);
             }
 
             if (isAdmin) {
                 Button addBtn = new Button("+ Add Canteen");
-                addBtn.setStyle("-fx-background-color: #3B82F6; -fx-text-fill: white;");
+                addBtn.setStyle("-fx-background-color: transparent; -fx-text-fill: #3B82F6; -fx-font-weight: bold; -fx-cursor: hand; -fx-padding: 5 10; -fx-border-color: #3B82F6; -fx-border-width: 1; -fx-border-radius: 5;");
                 addBtn.setOnAction(e -> handleAddCanteen());
                 canteenButtonBar.getChildren().add(addBtn);
             }
@@ -410,7 +419,7 @@ public class CanteenController {
                     setGraphic(null);
                 } else {
                     setText(f.getName() + " x" + f.getCartQuantity() + " - " + f.getCanteenName() + " (" + (f.getPrice() * f.getCartQuantity()) + ")");
-                    Button rm = new Button("X");
+                    Button rm = new Button("❌");
                     rm.setStyle("-fx-background-color: transparent; -fx-cursor: hand;");
                     rm.setOnAction(e -> {
                         f.setCartQuantity(f.getCartQuantity() - 1);
@@ -421,7 +430,7 @@ public class CanteenController {
                         listView.refresh();
                         foodsTable.refresh();
                         int totalCartItems = cart.stream().mapToInt(FoodItem::getCartQuantity).sum();
-                        cartButton.setText("Cart (" + totalCartItems + ")");
+                        cartButton.setText("🛒 Cart (" + totalCartItems + ")");
                     });
                     setGraphic(rm);
                     setContentDisplay(ContentDisplay.RIGHT);
@@ -453,7 +462,7 @@ public class CanteenController {
                 }
             }
             cart.clear();
-            cartButton.setText("Cart (0)");
+            cartButton.setText("🛒 Cart (0)");
             showAlert(Alert.AlertType.INFORMATION, "Success", "Your food has been ordered! Check your notifications.");
             loadFoods(currentCanteenId, currentCanteenName);
         }
@@ -505,7 +514,6 @@ public class CanteenController {
                         return;
                     }
 
-                    // Group strictly by the checkout batch ID, ignoring who the user is for grouping purposes
                     Map<String, List<FoodOrder>> groupedByBatch = new LinkedHashMap<>();
                     for (FoodOrder order : orders) {
                         String batchKey = order.getOrderBatchId();
@@ -515,7 +523,6 @@ public class CanteenController {
                         groupedByBatch.computeIfAbsent(batchKey, key -> new ArrayList<>()).add(order);
                     }
 
-                    // Render one card per checkout event
                     for (List<FoodOrder> orderBatch : groupedByBatch.values()) {
                         contentBox.getChildren().add(createFlatOrderCard(orderBatch, loadOrderDataRef[0]));
                     }
@@ -526,7 +533,6 @@ public class CanteenController {
                         return;
                     }
 
-                    // Group strictly by the checkout batch ID, just like the manager view
                     Map<String, List<FoodOrder>> groupedByBatch = new LinkedHashMap<>();
                     for (FoodOrder order : orders) {
                         String batchKey = order.getOrderBatchId();
@@ -536,7 +542,6 @@ public class CanteenController {
                         groupedByBatch.computeIfAbsent(batchKey, key -> new ArrayList<>()).add(order);
                     }
 
-                    // Render one card per checkout event
                     for (List<FoodOrder> orderBatch : groupedByBatch.values()) {
                         contentBox.getChildren().add(createFlatStudentOrderCard(orderBatch, loadOrderDataRef[0]));
                     }
@@ -552,22 +557,18 @@ public class CanteenController {
     }
 
     private VBox createFlatOrderCard(List<FoodOrder> orderBatch, Runnable refresh) {
-        // The main outer box (Separator Box)
         VBox card = new VBox(10);
         card.setStyle("-fx-background-color: white; -fx-padding: 15; -fx-background-radius: 8; -fx-border-color: #CBD5E1; -fx-border-width: 2; -fx-border-radius: 8; -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.1), 5, 0, 0, 2);");
 
-        // Grab details from the first item in this checkout batch
         FoodOrder firstOrder = orderBatch.get(0);
         String userName = firstOrder.getUserName() != null ? firstOrder.getUserName() : "Unknown User";
 
-        // Format the Date and Time
         String timeString = "Unknown Time";
         if (firstOrder.getOrderTime() != null) {
             DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd-MMM-yyyy hh:mm a");
             timeString = firstOrder.getOrderTime().format(formatter);
         }
 
-        // Header containing User and Date/Time
         HBox header = new HBox(10);
         header.setAlignment(Pos.CENTER_LEFT);
 
@@ -581,18 +582,14 @@ public class CanteenController {
         timeLbl.setStyle("-fx-text-fill: #64748B; -fx-font-weight: bold; -fx-font-size: 13;");
 
         header.getChildren().addAll(nameLbl, spacer, timeLbl);
-
-        // Add Header and Separator Line to card
         card.getChildren().addAll(header, new Separator());
 
-        // Add Summarized Items
         for (String line : summarizeOrderItems(orderBatch)) {
             Label itemLabel = new Label("  - " + line);
             itemLabel.setStyle("-fx-text-fill: #475569; -fx-font-size: 14;");
             card.getChildren().add(itemLabel);
         }
 
-        // Footer for the Approve Button
         HBox footer = new HBox(10);
         footer.setAlignment(Pos.CENTER_RIGHT);
         footer.setPadding(new Insets(10, 0, 0, 0));
@@ -600,7 +597,7 @@ public class CanteenController {
         boolean hasPending = orderBatch.stream().anyMatch(o -> "pending".equals(o.getStatus()));
         if (hasPending) {
             Button approveBtn = new Button("Approve This Order");
-            approveBtn.setStyle("-fx-background-color: #10B981; -fx-text-fill: white; -fx-font-weight: bold; -fx-cursor: hand; -fx-padding: 8 15 8 15;");
+            approveBtn.setStyle("-fx-background-color: #10B981; -fx-text-fill: white; -fx-font-weight: bold; -fx-cursor: hand; -fx-padding: 8 15 8 15; -fx-background-radius: 6;");
             approveBtn.setOnAction(e -> {
                 try {
                     for (FoodOrder order : orderBatch) {
@@ -621,55 +618,7 @@ public class CanteenController {
         }
 
         card.getChildren().add(footer);
-
         return card;
-    }
-
-    private VBox createManagerOrderBatchBox(List<FoodOrder> orderBatch, int orderNumber, Runnable refresh) {
-        VBox orderBox = new VBox(8);
-        orderBox.setStyle("-fx-background-color: #F8FAFC; -fx-padding: 12; -fx-background-radius: 8; -fx-border-color: #CBD5E1; -fx-border-radius: 8;");
-
-        HBox header = new HBox(10);
-        header.setAlignment(Pos.CENTER_LEFT);
-
-        Label orderLabel = new Label("Order " + orderNumber);
-        orderLabel.setStyle("-fx-font-weight: bold; -fx-text-fill: #0F172A;");
-
-        Region spacer = new Region();
-        HBox.setHgrow(spacer, Priority.ALWAYS);
-
-        boolean hasPending = orderBatch.stream().anyMatch(o -> "pending".equals(o.getStatus()));
-        if (hasPending) {
-            Button approveBtn = new Button("Approve Order");
-            approveBtn.setStyle("-fx-background-color: #2563EB; -fx-text-fill: white; -fx-font-weight: bold; -fx-cursor: hand;");
-            approveBtn.setOnAction(e -> {
-                try {
-                    for (FoodOrder order : orderBatch) {
-                        if ("pending".equals(order.getStatus())) {
-                            canteenDAO.updateOrderStatus(order.getId(), "collected");
-                        }
-                    }
-                    refresh.run();
-                } catch (Exception ex) {
-                    ex.printStackTrace();
-                }
-            });
-            header.getChildren().addAll(orderLabel, spacer, approveBtn);
-        } else {
-            Label readyLabel = new Label("Approved");
-            readyLabel.setStyle("-fx-text-fill: #10B981; -fx-font-style: italic;");
-            header.getChildren().addAll(orderLabel, spacer, readyLabel);
-        }
-
-        orderBox.getChildren().add(header);
-
-        for (String line : summarizeOrderItems(orderBatch)) {
-            Label itemLabel = new Label(line);
-            itemLabel.setStyle("-fx-text-fill: #475569; -fx-font-size: 14;");
-            orderBox.getChildren().add(itemLabel);
-        }
-
-        return orderBox;
     }
 
     private List<String> summarizeOrderItems(List<FoodOrder> orders) {
@@ -687,22 +636,18 @@ public class CanteenController {
     }
 
     private VBox createFlatStudentOrderCard(List<FoodOrder> orderBatch, Runnable refresh) {
-        // The main outer box
         VBox card = new VBox(10);
         card.setStyle("-fx-background-color: white; -fx-padding: 15; -fx-background-radius: 8; -fx-border-color: #CBD5E1; -fx-border-width: 2; -fx-border-radius: 8; -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.1), 5, 0, 0, 2);");
 
-        // Grab details from the first item in this checkout batch
         FoodOrder firstOrder = orderBatch.get(0);
         String canteenName = firstOrder.getCanteenName() != null ? firstOrder.getCanteenName() : "Unknown Canteen";
 
-        // Format the Date and Time
         String timeString = "Unknown Time";
         if (firstOrder.getOrderTime() != null) {
             DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd-MMM-yyyy hh:mm a");
             timeString = firstOrder.getOrderTime().format(formatter);
         }
 
-        // Header containing Canteen Name and Date/Time
         HBox header = new HBox(10);
         header.setAlignment(Pos.CENTER_LEFT);
 
@@ -716,23 +661,18 @@ public class CanteenController {
         timeLbl.setStyle("-fx-text-fill: #64748B; -fx-font-weight: bold; -fx-font-size: 13;");
 
         header.getChildren().addAll(nameLbl, spacer, timeLbl);
-
-        // Add Header and Separator Line to card
         card.getChildren().addAll(header, new Separator());
 
-        // Add Summarized Items (reusing the same summary method)
         for (String line : summarizeOrderItems(orderBatch)) {
             Label itemLabel = new Label("  - " + line);
             itemLabel.setStyle("-fx-text-fill: #475569; -fx-font-size: 14;");
             card.getChildren().add(itemLabel);
         }
 
-        // Footer for Status and Receive Button
         HBox footer = new HBox(10);
         footer.setAlignment(Pos.CENTER_RIGHT);
         footer.setPadding(new Insets(10, 0, 0, 0));
 
-        // If any item is "collected" (approved by manager), the order is ready
         boolean isReady = orderBatch.stream().anyMatch(o -> "collected".equals(o.getStatus()));
 
         if (isReady) {
@@ -743,7 +683,7 @@ public class CanteenController {
             HBox.setHgrow(footSpacer, Priority.ALWAYS);
 
             Button receiveBtn = new Button("Mark Received");
-            receiveBtn.setStyle("-fx-background-color: #3B82F6; -fx-text-fill: white; -fx-font-weight: bold; -fx-cursor: hand; -fx-padding: 8 15 8 15;");
+            receiveBtn.setStyle("-fx-background-color: #3B82F6; -fx-text-fill: white; -fx-font-weight: bold; -fx-cursor: hand; -fx-padding: 8 15 8 15; -fx-background-radius: 6;");
             receiveBtn.setOnAction(e -> {
                 try {
                     for (FoodOrder o : orderBatch) {
@@ -765,7 +705,6 @@ public class CanteenController {
         }
 
         card.getChildren().add(footer);
-
         return card;
     }
 }

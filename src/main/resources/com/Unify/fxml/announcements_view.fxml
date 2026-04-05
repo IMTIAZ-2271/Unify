@@ -32,7 +32,7 @@
             <TextArea fx:id="contentArea" promptText="What's the news?" prefRowCount="3" style="-fx-padding: 5;"/>
             <HBox spacing="10" alignment="CENTER_RIGHT">
                 <Button text="Cancel" onAction="#hidePostForm" style="-fx-background-color: transparent; -fx-text-fill: #64748B; -fx-cursor: hand; -fx-font-weight: bold;"/>
-                <Button text="Post Now" onAction="#postAnnouncement" style="-fx-background-color: #10B981; -fx-text-fill: white; -fx-font-weight: bold; -fx-cursor: hand; -fx-padding: 8 15; -fx-background-radius: 5;"/>
+                <Button fx:id="submitPostBtn" text="Post" onAction="#postAnnouncement" style="-fx-background-color: transparent; -fx-text-fill: #3B82F6; -fx-font-weight: bold; -fx-cursor: hand; -fx-padding: 8 15;"/>
             </HBox>
         </VBox>
 

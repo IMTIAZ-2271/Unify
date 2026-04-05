@@ -5,18 +5,18 @@
 
 <HBox style="-fx-background-color:white;" VBox.vgrow="ALWAYS" xmlns="http://javafx.com/javafx/17.0.12"
       xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.Unify.controller.MonthViewController">
-    <VBox>
-        <children>
-            <Button fx:id="selectAllButton" mnemonicParsing="false" onAction="#checkOrUncheckAll" prefHeight="26.0"
-                    prefWidth="81.0" text="Select All"/>
+    <VBox prefWidth="210" spacing="16" style="-fx-padding: 20 16 20 16; -fx-background-color: #F8FAFC; -fx-border-color: #E2E8F0; -fx-border-width: 0 1 0 0;">
+        <HBox alignment="CENTER_LEFT">
+            <Label text="Calendars" style="-fx-font-weight:bold;-fx-font-size:13px;-fx-text-fill:#475569;"/>
+            <Region HBox.hgrow="ALWAYS"/>
+            <Button fx:id="selectAllButton" mnemonicParsing="false" onAction="#checkOrUncheckAll"
+                    style="-fx-background-color:transparent;-fx-text-fill:#3B82F6;-fx-font-size:11px;-fx-cursor:hand;-fx-padding:0;"
+                    text="Deselect All"/>
+        </HBox>
 
-            <!-- Left: Group filter panel -->
-            <VBox fx:id="filterPanel" prefWidth="175" spacing="4" styleClass="filter-panel">
-                <!-- populated programmatically -->
-            </VBox>
-        </children>
+        <VBox fx:id="filterPanel" spacing="10">
+        </VBox>
     </VBox>
-
     <Separator orientation="VERTICAL" style="-fx-opacity:0.3;"/>
 
     <!-- Right: Calendar -->

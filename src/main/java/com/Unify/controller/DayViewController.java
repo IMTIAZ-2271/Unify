@@ -16,9 +16,11 @@ import javafx.scene.paint.Color;
 import javafx.scene.shape.Rectangle;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+
 
 public class DayViewController {
 
@@ -59,6 +61,7 @@ public class DayViewController {
         }
         scrollPane.setVvalue(Math.max(0, Math.min(1.0, (nowY - 100) / totalPx)));
     }
+
 
     private void build() {
         timePane.getChildren().clear();
@@ -101,34 +104,74 @@ public class DayViewController {
         // Events
         try {
             if (date != null) {
-                List<Event> events = AppData.get().getEventsForDay(date);//dao.forDay(Session.uid(), date);
-                for (Event e : events) {
-                    if ((!e.isPersonal() && MonthViewController.groupFilter.get(e.getGroupId())) || (e.isPersonal() && MonthViewController.showPersonal))
-                        placeEvent(e);
+                List<Event> allEvents = AppData.get().getEventsForDay(date);
+                List<Event> visibleEvents = new java.util.ArrayList<>();
+
+                // Filter visible events
+                for (Event e : allEvents) {
+                    boolean showGroup = !e.isPersonal() && MonthViewController.groupFilter.getOrDefault(e.getGroupId(), true);
+                    boolean showPers = e.isPersonal() && MonthViewController.showPersonal;
+                    if (showGroup || showPers) {
+                        visibleEvents.add(e);
+                    }
                 }
+
+                // Sort by Start Time, then End Time
+                visibleEvents.sort(java.util.Comparator
+                        .comparing((Event e) -> e.getStartTime().toLocalTime())
+                        .thenComparing(e -> e.getEndTime().toLocalTime()));
+
+                // Send to algorithm
+                layoutEvents(visibleEvents);
             }
         } catch (Exception ex) {
             ex.printStackTrace();
         }
     }
+    private void layoutEvents(List<Event> events) {
+        if (events.isEmpty()) return;
 
-    private void placeEvent(Event e) {
-        LocalTime start = e.getStartTime().toLocalTime();
-        LocalTime end = e.getEndTime().toLocalTime();
-        double y = (start.getHour() * 60 + start.getMinute()) * PX_PER_MIN;
-        int dur = (int) java.time.Duration.between(start, end).toMinutes();
+        List<Event> currentCluster = new java.util.ArrayList<>();
+        long maxClusterEnd = getEndMin(events.get(0));
+
+        for (Event e : events) {
+            long start = getStartMin(e);
+            long end = getEndMin(e);
+
+            if (start < maxClusterEnd) {
+                currentCluster.add(e);
+                if (end > maxClusterEnd) {
+                    maxClusterEnd = end;
+                }
+            } else {
+                renderCluster(currentCluster);
+                currentCluster.clear();
+                currentCluster.add(e);
+                maxClusterEnd = end;
+            }
+        }
+        if (!currentCluster.isEmpty()) {
+            renderCluster(currentCluster);
+        }
+    }
+
+    private void placeEventNode(Event e, double x, double width) {
+        long startMin = getStartMin(e);
+        long endMin = getEndMin(e);
+
+        double y = startMin * PX_PER_MIN;
+        long dur = endMin - startMin;
         if (dur <= 0) dur = 30;
         double h = Math.max(dur * PX_PER_MIN - 2, 24);
 
-        // Auto-color for group events
         String displayColor = e.isGroup() && e.getGroupId() != null
                 ? ColorUtil.forGroup(e.getGroupId())
                 : e.getColor();
 
         VBox box = new VBox(2);
-        box.setLayoutX(TIME_COL + 4);
+        box.setLayoutX(x);
         box.setLayoutY(y + 1);
-        box.setPrefWidth(650);
+        box.setPrefWidth(width);
         box.setPrefHeight(h);
         box.setMaxHeight(h);
         box.setPadding(new Insets(3, 6, 3, 8));
@@ -141,7 +184,17 @@ public class DayViewController {
 
         Label title = new Label(e.getTitle());
         title.setStyle("-fx-font-weight:bold;-fx-font-size:12;-fx-text-fill:#1E293B;");
-        Label time = new Label(start.format(T) + " – " + end.format(T));
+
+        // Show dates in the label if it spans multiple days
+        String timeStr;
+        if (e.getStartTime().toLocalDate().equals(e.getEndTime().toLocalDate())) {
+            timeStr = e.getStartTime().format(T) + " – " + e.getEndTime().format(T);
+        } else {
+            DateTimeFormatter dtFmt = DateTimeFormatter.ofPattern("MMM d, h:mm a");
+            timeStr = e.getStartTime().format(dtFmt) + " – " + e.getEndTime().format(dtFmt);
+        }
+
+        Label time = new Label(timeStr);
         time.setStyle("-fx-font-size:10;-fx-text-fill:#475569;");
         box.getChildren().addAll(title, time);
 
@@ -151,9 +204,46 @@ public class DayViewController {
             box.getChildren().add(loc);
         }
 
-        Tooltip.install(box, new Tooltip(e.getTitle() + "\n" + start.format(T) + " – " + end.format(T)));
+        Tooltip.install(box, new Tooltip(e.getTitle() + "\n" + timeStr));
         box.setOnMouseClicked(ev -> openDetail(e));
         timePane.getChildren().add(box);
+    }
+
+    private void renderCluster(List<Event> cluster) {
+        List<List<Event>> columns = new java.util.ArrayList<>();
+
+        for (Event e : cluster) {
+            boolean placed = false;
+            long start = getStartMin(e);
+
+            for (List<Event> col : columns) {
+                Event lastEventInCol = col.get(col.size() - 1);
+                long colEnd = getEndMin(lastEventInCol);
+
+                if (start >= colEnd) {
+                    col.add(e);
+                    placed = true;
+                    break;
+                }
+            }
+            if (!placed) {
+                List<Event> newCol = new java.util.ArrayList<>();
+                newCol.add(e);
+                columns.add(newCol);
+            }
+        }
+
+        double totalAvailWidth = 730 - TIME_COL - 10;
+        int numCols = columns.size();
+        double colWidth = totalAvailWidth / numCols;
+
+        for (int colIdx = 0; colIdx < numCols; colIdx++) {
+            List<Event> col = columns.get(colIdx);
+            for (Event e : col) {
+                double x = TIME_COL + 4 + (colIdx * colWidth);
+                placeEventNode(e, x, colWidth - 2);
+            }
+        }
     }
 
     private void openDetail(Event e) {
@@ -185,5 +275,17 @@ public class DayViewController {
     @FXML
     private void gotoNextDay(ActionEvent event) {
         setDate(date.plusDays(1));
+    }
+    private long getStartMin(Event e) {
+        LocalDateTime startOfDay = date.atStartOfDay();
+        if (e.getStartTime().isBefore(startOfDay)) return 0; // Started on a previous day
+        return java.time.Duration.between(startOfDay, e.getStartTime()).toMinutes();
+    }
+
+    private long getEndMin(Event e) {
+        LocalDateTime startOfDay = date.atStartOfDay();
+        LocalDateTime endOfDay = date.plusDays(1).atStartOfDay();
+        if (!e.getEndTime().isBefore(endOfDay)) return 1440; // Ends on a future day
+        return java.time.Duration.between(startOfDay, e.getEndTime()).toMinutes();
     }
 }

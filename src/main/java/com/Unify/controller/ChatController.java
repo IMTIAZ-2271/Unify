@@ -67,6 +67,13 @@ public class ChatController {
     // CACHE to hold the last message strings so scrolling doesn't lag
     private final Map<Integer, String> lastMessageCache = new HashMap<>();
 
+    // Replace lastMessageTime with lastPollTime
+    private Timestamp lastPollTime = new Timestamp(0);
+
+    // Maps to track UI elements by Message ID so we can update them in place
+    private final Map<Integer, Label> messageLabels = new HashMap<>();
+    private final Map<Integer, VBox> replyBoxes = new HashMap<>();
+
     @FXML
     public void initialize() {
         setupGroupList();
@@ -178,7 +185,12 @@ public class ChatController {
         setupPermissionsAndMenu();
 
         if (chatPoller != null) chatPoller.stop();
-        lastMessageTime = new Timestamp(0);
+
+        // --- ROBUST FIX: Reset Tracking ---
+        lastPollTime = new Timestamp(0);
+        messageLabels.clear();
+        replyBoxes.clear();
+
         chatList.getChildren().clear();
         cancelReply();
 
@@ -186,14 +198,21 @@ public class ChatController {
             List<ChatMessage> msgs = chatDAO.getMessagesForGroup(group.getId());
             for (ChatMessage m : msgs) {
                 appendMessageToUI(m);
-                if (m.getCreatedAt().after(lastMessageTime)) lastMessageTime = m.getCreatedAt();
+
+                // Track the latest update time instead of just creation time
+                if (m.getUpdatedAt() != null && m.getUpdatedAt().after(lastPollTime)) {
+                    lastPollTime = m.getUpdatedAt();
+                } else if (m.getCreatedAt().after(lastPollTime)) {
+                    lastPollTime = m.getCreatedAt();
+                }
             }
             Platform.runLater(() -> chatScroll.setVvalue(1.0));
-        } catch (Exception e) { e.printStackTrace(); }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
 
         startChatPoller();
     }
-
     // --- MODERN CUSTOM POPUP MENU ---
     private void setupPermissionsAndMenu() {
         try {
@@ -271,6 +290,7 @@ public class ChatController {
         bubble.setStyle("-fx-padding: 8 12 4 12; -fx-background-radius: " + radius + "; -fx-background-color: " + bgColor + "; -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.05), 2, 0, 0, 1);");
         bubble.setMaxWidth(400);
 
+        // --- Handle Reply Box ---
         if (m.getReplyToId() != null) {
             VBox quoteBox = new VBox(2);
             quoteBox.setStyle("-fx-background-color: rgba(0,0,0,0.05); -fx-padding: 4 8; -fx-background-radius: 5; -fx-border-color: #00A884; -fx-border-width: 0 0 0 3;");
@@ -282,6 +302,9 @@ public class ChatController {
             quoteText.setMaxHeight(30);
             quoteBox.getChildren().addAll(quoteName, quoteText);
             bubble.getChildren().add(quoteBox);
+
+            // ROBUST FIX: Track the reply box in memory
+            replyBoxes.put(m.getId(), quoteBox);
         }
 
         if (!isMe) {
@@ -290,9 +313,26 @@ public class ChatController {
             bubble.getChildren().add(sender);
         }
 
-        Label text = new Label(m.getMessage());
+        // --- Handle Main Message Text ---
+        Label text = new Label();
+
+        if (m.isDeleted()) {
+            text.setText("This message was deleted");
+            text.setStyle("-fx-font-size: 14; -fx-text-fill: #888888; -fx-font-style: italic;");
+
+            // Hide the quote box if this message is deleted
+            if (replyBoxes.containsKey(m.getId())) {
+                replyBoxes.get(m.getId()).setVisible(false);
+                replyBoxes.get(m.getId()).setManaged(false);
+            }
+        } else {
+            text.setText(m.getMessage());
+            text.setStyle("-fx-font-size: 14; -fx-text-fill: #111827;");
+        }
         text.setWrapText(true);
-        text.setStyle("-fx-font-size: 14; -fx-text-fill: #111827;");
+
+        // ROBUST FIX: Track the text label in memory
+        messageLabels.put(m.getId(), text);
 
         String timeStr = m.getCreatedAt().toLocalDateTime().format(java.time.format.DateTimeFormatter.ofPattern("h:mm a"));
         Label timeLabel = new Label(timeStr);
@@ -303,18 +343,52 @@ public class ChatController {
 
         bubble.getChildren().addAll(text, timeBox);
 
+        // --- Handle Context Menu (Reply & Delete) ---
         ContextMenu contextMenu = new ContextMenu();
-        MenuItem replyItem = new MenuItem("↩ Reply");
-        replyItem.setOnAction(e -> {
-            replyingToMessage = m;
-            replyPreviewName.setText(isMe ? "Replying to yourself" : "Replying to " + m.getSenderName());
-            replyPreviewText.setText(m.getMessage());
-            replyPreviewBox.setVisible(true);
-            replyPreviewBox.setManaged(true);
-            chatInputField.requestFocus();
-        });
-        contextMenu.getItems().add(replyItem);
-        bubble.setOnContextMenuRequested(e -> contextMenu.show(bubble, e.getScreenX(), e.getScreenY()));
+
+        // Only allow Reply or Delete if the message is NOT deleted
+        if (!m.isDeleted()) {
+            MenuItem replyItem = new MenuItem("↩ Reply");
+            replyItem.setOnAction(e -> {
+                replyingToMessage = m;
+                replyPreviewName.setText(isMe ? "Replying to yourself" : "Replying to " + m.getSenderName());
+                replyPreviewText.setText(m.getMessage());
+                replyPreviewBox.setVisible(true);
+                replyPreviewBox.setManaged(true);
+                chatInputField.requestFocus();
+            });
+            contextMenu.getItems().add(replyItem);
+
+            if (isMe) {
+                MenuItem deleteItem = new MenuItem("🗑 Delete");
+                deleteItem.setOnAction(e -> {
+                    AsyncWriter.get().write(
+                            () -> chatDAO.deleteMessage(m.getId(), Session.uid()),
+                            () -> {
+                                // Instantly update the UI for the sender upon success
+                                Platform.runLater(() -> {
+                                    m.setDeleted(true);
+                                    m.setMessage("This message was deleted");
+                                    text.setText(m.getMessage());
+                                    text.setStyle("-fx-font-size: 14; -fx-text-fill: #888888; -fx-font-style: italic;");
+
+                                    if (replyBoxes.containsKey(m.getId())) {
+                                        replyBoxes.get(m.getId()).setVisible(false);
+                                        replyBoxes.get(m.getId()).setManaged(false);
+                                    }
+                                });
+                            },
+                            Throwable::printStackTrace
+                    );
+                });
+                contextMenu.getItems().add(deleteItem);
+            }
+        }
+
+        // Only attach context menu if there are valid options inside
+        if (!contextMenu.getItems().isEmpty()) {
+            bubble.setOnContextMenuRequested(e -> contextMenu.show(bubble, e.getScreenX(), e.getScreenY()));
+        }
 
         HBox row = new HBox();
         if (isMe) {
@@ -329,26 +403,53 @@ public class ChatController {
 
     private void startChatPoller() {
         chatPoller = new Timeline(new KeyFrame(Duration.seconds(2), event -> {
-            List<ChatMessage> newMsgs = chatDAO.getNewMessages(currentGroup.getId(), lastMessageTime);
-            if (!newMsgs.isEmpty()) {
-                for (ChatMessage m : newMsgs) {
-                    appendMessageToUI(m);
-                    if (m.getCreatedAt().after(lastMessageTime)) lastMessageTime = m.getCreatedAt();
+            // Fetch anything created OR modified since the last poll
+            List<ChatMessage> updates = chatDAO.getModifiedMessages(currentGroup.getId(), lastPollTime);
+
+            if (!updates.isEmpty()) {
+                boolean hasNewMessages = false;
+
+                for (ChatMessage m : updates) {
+                    // If the map contains the ID, it's an existing message that was updated (deleted)
+                    if (messageLabels.containsKey(m.getId())) {
+                        if (m.isDeleted()) {
+                            Label textLbl = messageLabels.get(m.getId());
+                            textLbl.setText("This message was deleted");
+                            textLbl.setStyle("-fx-font-size: 14; -fx-text-fill: #888888; -fx-font-style: italic;");
+
+                            VBox quoteBox = replyBoxes.get(m.getId());
+                            if (quoteBox != null) {
+                                quoteBox.setVisible(false);
+                                quoteBox.setManaged(false);
+                            }
+                        }
+                    } else {
+                        // If it's not in the map, it's a brand new message
+                        appendMessageToUI(m);
+                        hasNewMessages = true;
+                    }
+
+                    // Push the poll time forward
+                    if (m.getUpdatedAt().after(lastPollTime)) {
+                        lastPollTime = m.getUpdatedAt();
+                    }
                 }
 
-                // Update the sidebar cache live!
-                ChatMessage last = newMsgs.get(newMsgs.size() - 1);
-                String prefix = (last.getSenderId() == Session.uid()) ? "You: " : last.getSenderName() + ": ";
-                lastMessageCache.put(currentGroup.getId(), prefix + last.getMessage());
-                groupListView.refresh(); // Tell the sidebar to update
+                // Only auto-scroll if an actual new message was added
+                if (hasNewMessages) {
+                    Platform.runLater(() -> chatScroll.setVvalue(1.0));
 
-                Platform.runLater(() -> chatScroll.setVvalue(1.0));
+                    // Update sidebar cache
+                    ChatMessage last = updates.get(updates.size() - 1);
+                    String prefix = (last.getSenderId() == Session.uid()) ? "You: " : last.getSenderName() + ": ";
+                    lastMessageCache.put(currentGroup.getId(), prefix + last.getMessage());
+                    groupListView.refresh();
+                }
             }
         }));
         chatPoller.setCycleCount(Timeline.INDEFINITE);
         chatPoller.play();
     }
-
     @FXML
     private void cancelReply() {
         replyingToMessage = null;

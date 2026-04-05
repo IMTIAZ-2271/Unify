@@ -80,11 +80,12 @@ public class EventDAO {
     }
 
     public List<Event> inRange(int uid, LocalDateTime from, LocalDateTime to) throws SQLException {
-        String sql = SELECT + "WHERE e.start_time BETWEEN ? AND ? " + VISIBLE + " ORDER BY e.start_time";
+        // Changed BETWEEN to overlap logic
+        String sql = SELECT + "WHERE e.start_time <= ? AND e.end_time >= ? " + VISIBLE + " ORDER BY e.start_time";
         List<Event> list = new ArrayList<>();
         try (Connection c = DB.conn(); PreparedStatement ps = c.prepareStatement(sql)) {
-            ps.setTimestamp(1, Timestamp.valueOf(from));
-            ps.setTimestamp(2, Timestamp.valueOf(to));
+            ps.setTimestamp(1, Timestamp.valueOf(to));   // Event must start before the range ends
+            ps.setTimestamp(2, Timestamp.valueOf(from)); // Event must end after the range starts
             ps.setInt(3, uid);
             ps.setInt(4, uid);
             ResultSet rs = ps.executeQuery();
@@ -118,12 +119,13 @@ public class EventDAO {
     public List<Event> forGroupInMonth(int groupId, int year, int month) throws SQLException {
         LocalDateTime from = LocalDateTime.of(year, month, 1, 0, 0);
         LocalDateTime to = from.plusMonths(1).minusSeconds(1);
-        String sql = SELECT + "WHERE e.group_id=? AND e.start_time BETWEEN ? AND ? ORDER BY e.start_time";
+        // Changed BETWEEN to overlap logic
+        String sql = SELECT + "WHERE e.group_id=? AND e.start_time <= ? AND e.end_time >= ? ORDER BY e.start_time";
         List<Event> list = new ArrayList<>();
         try (Connection c = DB.conn(); PreparedStatement ps = c.prepareStatement(sql)) {
             ps.setInt(1, groupId);
-            ps.setTimestamp(2, Timestamp.valueOf(from));
-            ps.setTimestamp(3, Timestamp.valueOf(to));
+            ps.setTimestamp(2, Timestamp.valueOf(to));
+            ps.setTimestamp(3, Timestamp.valueOf(from));
             ResultSet rs = ps.executeQuery();
             while (rs.next()) list.add(map(rs));
         }

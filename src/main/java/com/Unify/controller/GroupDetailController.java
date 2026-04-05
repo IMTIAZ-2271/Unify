@@ -7,6 +7,7 @@ import com.Unify.dao.*;
 import com.Unify.model.*;
 import com.Unify.util.ColorUtil;
 import com.Unify.util.Imgs;
+import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
@@ -75,6 +76,9 @@ public class GroupDetailController {
     private final UserDAO userDAO = new UserDAO();
     private final NotificationDAO notifDAO = new NotificationDAO();
     private static final DateTimeFormatter FMT = DateTimeFormatter.ofPattern("MMM d, yyyy h:mm a");
+    // Maps to track UI elements for real-time updates/deletions
+    private final Map<Integer, Label> messageLabels = new HashMap<>();
+    private final Map<Integer, VBox> replyBoxes = new HashMap<>();
 
     public void setGroup(Group g) {
         this.group = g;
@@ -789,6 +793,7 @@ public class GroupDetailController {
 
             quoteBox.getChildren().addAll(quoteName, quoteText);
             bubble.getChildren().add(quoteBox);
+            replyBoxes.put(m.getId(), quoteBox); // Store reference for later (e.g., if the original message gets deleted)
         }
         // ---------------------------------------------------------
 
@@ -803,6 +808,7 @@ public class GroupDetailController {
         Label text = new Label(m.getMessage());
         text.setWrapText(true);
         text.setStyle("-fx-font-size: 14; -fx-text-fill: #111827;");
+        messageLabels.put(m.getId(), text);
 
         // 5. Timestamp
         String timeStr = m.getCreatedAt().toLocalDateTime().format(java.time.format.DateTimeFormatter.ofPattern("h:mm a"));
@@ -845,22 +851,47 @@ public class GroupDetailController {
     }
 
     private void startChatPoller() {
-        // Runs every 2 seconds
-        if (!group.isMember()) return;
         chatPoller = new Timeline(new KeyFrame(Duration.seconds(2), event -> {
-            // Only ask the database for messages newer than our lastMessageTime
-            List<ChatMessage> newMsgs = chatDAO.getNewMessages(group.getId(), lastMessageTime);
+            // FIX: Use 'group' and 'lastMessageTime'
+            List<ChatMessage> updates = chatDAO.getModifiedMessages(group.getId(), lastMessageTime);
 
-            if (!newMsgs.isEmpty()) {
-                for (ChatMessage m : newMsgs) {
-                    appendMessageToUI(m);
+            if (!updates.isEmpty()) {
+                boolean hasNewMessages = false;
 
-                    if (m.getCreatedAt().after(lastMessageTime)) {
-                        lastMessageTime = m.getCreatedAt();
+                for (ChatMessage m : updates) {
+                    // If the map contains the ID, it's an existing message that was updated (deleted)
+                    if (messageLabels.containsKey(m.getId())) {
+                        if (m.isDeleted()) {
+                            Label textLbl = messageLabels.get(m.getId());
+                            textLbl.setText("This message was deleted");
+                            textLbl.setStyle("-fx-font-size: 14; -fx-text-fill: #888888; -fx-font-style: italic;");
+
+                            VBox quoteBox = replyBoxes.get(m.getId());
+                            if (quoteBox != null) {
+                                quoteBox.setVisible(false);
+                                quoteBox.setManaged(false);
+                            }
+                        }
+                    } else {
+                        // If it's not in the map, it's a brand new message
+                        appendMessageToUI(m);
+                        hasNewMessages = true;
+                    }
+
+                    // Push the poll time forward.
+                    // Make sure ChatMessage has getUpdatedAt() returning a Timestamp!
+                    if (m.getUpdatedAt() != null && m.getUpdatedAt().after(lastMessageTime)) {
+                        lastMessageTime = m.getUpdatedAt();
                     }
                 }
-                // Scroll to bottom when new messages arrive
-                javafx.application.Platform.runLater(() -> chatScroll.setVvalue(1.0));
+
+                // Only auto-scroll if an actual new message was added
+                if (hasNewMessages) {
+                    Platform.runLater(() -> chatScroll.setVvalue(1.0));
+
+                    // Note: Removed the undefined 'lastMessageCache' and broken 'KerberosTicket' code.
+                    // If you need to refresh a sidebar, you should trigger a callback or global event here instead.
+                }
             }
         }));
         chatPoller.setCycleCount(Timeline.INDEFINITE);

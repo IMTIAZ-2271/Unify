@@ -3,7 +3,6 @@ package com.Unify.controller;
 import com.Unify.Session;
 import com.Unify.dao.GroupDAO;
 import com.Unify.dao.TransportDAO;
-import com.Unify.dao.UserDAO;
 import com.Unify.model.Bus;
 import com.Unify.model.Group;
 import com.Unify.model.User;
@@ -18,19 +17,18 @@ import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
 import com.Unify.Navigator;
-import javafx.scene.control.cell.PropertyValueFactory;
+import javafx.scene.layout.HBox;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
 
 import java.io.IOException;
 import java.net.URL;
 import java.util.List;
-import java.util.Optional;
 import java.util.ResourceBundle;
 
 public class TransportController implements Initializable {
 
-    @FXML private ComboBox<Group> groupComboBox; // NEW
+    @FXML private ComboBox<Group> groupComboBox;
     @FXML private TableView<Bus> busTable;
     @FXML private TableColumn<Bus, String> colBusNumber;
     @FXML private TableColumn<Bus, String> colRoute;
@@ -38,13 +36,18 @@ public class TransportController implements Initializable {
     @FXML private TableColumn<Bus, String> colType;
     @FXML private TableColumn<Bus, String> colMessage;
 
+    // NEW: Action column for inline Edit/Delete buttons
+    @FXML private TableColumn<Bus, Void> colAction;
+
     @FXML private TextField searchField;
     @FXML private Button addBusButton;
 
     private TransportDAO transportDAO;
-    private GroupDAO groupDAO; // NEW
+    private GroupDAO groupDAO;
     private ObservableList<Bus> masterBusList;
-    private Group currentGroup; // NEW
+    private Group currentGroup;
+
+    private boolean canManageTransport = false;
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
@@ -54,8 +57,8 @@ public class TransportController implements Initializable {
         busTable.setItems(masterBusList);
 
         setupSearchFilter();
+        setupActionColumn(); // Setup the minimalist buttons
 
-        // 1. ADD LISTENER FIRST: So it catches the auto-selection!
         groupComboBox.getSelectionModel().selectedItemProperty().addListener((obs, oldVal, newVal) -> {
             if (newVal != null) {
                 currentGroup = newVal;
@@ -64,8 +67,53 @@ public class TransportController implements Initializable {
             }
         });
 
-        // 2. LOAD DATA SECOND: This triggers the listener we just added above
         loadGroupsIntoDropdown();
+    }
+
+    private void setupActionColumn() {
+        colAction.setCellFactory(param -> new TableCell<>() {
+            private final Button editBtn = new Button("Edit");
+            private final Button delBtn = new Button("Delete");
+            private final HBox actionBox = new HBox(10, editBtn, delBtn);
+
+            {
+                // Minimalist Table Buttons
+                editBtn.setStyle("-fx-background-color: transparent; -fx-text-fill: #64748B; -fx-font-weight: bold; -fx-cursor: hand;");
+                editBtn.setOnMouseEntered(e -> editBtn.setStyle("-fx-background-color: transparent; -fx-text-fill: #3B82F6; -fx-font-weight: bold; -fx-cursor: hand; -fx-underline: true;"));
+                editBtn.setOnMouseExited(e -> editBtn.setStyle("-fx-background-color: transparent; -fx-text-fill: #64748B; -fx-font-weight: bold; -fx-cursor: hand; -fx-underline: false;"));
+
+                delBtn.setStyle("-fx-background-color: transparent; -fx-text-fill: #64748B; -fx-font-weight: bold; -fx-cursor: hand;");
+                delBtn.setOnMouseEntered(e -> delBtn.setStyle("-fx-background-color: transparent; -fx-text-fill: #EF4444; -fx-font-weight: bold; -fx-cursor: hand; -fx-underline: true;"));
+                delBtn.setOnMouseExited(e -> delBtn.setStyle("-fx-background-color: transparent; -fx-text-fill: #64748B; -fx-font-weight: bold; -fx-cursor: hand; -fx-underline: false;"));
+
+                editBtn.setOnAction(e -> {
+                    Bus selectedBus = getTableView().getItems().get(getIndex());
+                    openBusForm(selectedBus);
+                });
+
+                delBtn.setOnAction(e -> {
+                    Bus selectedBus = getTableView().getItems().get(getIndex());
+                    Alert confirm = new Alert(Alert.AlertType.CONFIRMATION, "Delete " + selectedBus.getBusNumber() + "?");
+                    if (confirm.showAndWait().orElse(ButtonType.CANCEL) == ButtonType.OK) {
+                        if (transportDAO.deleteBus(selectedBus.getBusNumber())) {
+                            masterBusList.remove(selectedBus);
+                        }
+                    }
+                });
+            }
+
+            @Override
+            protected void updateItem(Void item, boolean empty) {
+                super.updateItem(item, empty);
+                if (empty) {
+                    setGraphic(null);
+                } else if (canManageTransport) {
+                    setGraphic(actionBox); // Show only if they are an admin/ticket_manager
+                } else {
+                    setGraphic(null);
+                }
+            }
+        });
     }
 
     private void loadGroupsIntoDropdown() {
@@ -74,7 +122,6 @@ public class TransportController implements Initializable {
             List<Group> myGroups = groupDAO.myGroups(userId);
             groupComboBox.setItems(FXCollections.observableArrayList(myGroups));
 
-            // Format the dropdown to show group names
             groupComboBox.setCellFactory(param -> new ListCell<>() {
                 @Override
                 protected void updateItem(Group group, boolean empty) {
@@ -84,7 +131,6 @@ public class TransportController implements Initializable {
             });
             groupComboBox.setButtonCell(groupComboBox.getCellFactory().call(null));
 
-            // Auto-select the first group if available
             if (!myGroups.isEmpty()) {
                 groupComboBox.getSelectionModel().selectFirst();
             }
@@ -116,19 +162,18 @@ public class TransportController implements Initializable {
         sortedData.comparatorProperty().bind(busTable.comparatorProperty());
         busTable.setItems(sortedData);
     }
+
     private void checkPermissions() {
         if (currentGroup == null) return;
 
-        boolean canManageTransport = false;
+        canManageTransport = false;
 
         try {
             int uid = Session.uid();
 
-            // 1. Automatically grant access if they are the Admin of the group
             if (groupDAO.isAdmin(currentGroup.getId(), uid)) {
                 canManageTransport = true;
             } else {
-                // 2. Otherwise, check if they were specifically assigned "ticket_manager"
                 for (User u : groupDAO.members(currentGroup.getId())) {
                     if (u.getId() == uid && u.getBio() != null && u.getBio().contains("ticket_manager")) {
                         canManageTransport = true;
@@ -140,43 +185,18 @@ public class TransportController implements Initializable {
             e.printStackTrace();
         }
 
-        if (canManageTransport) {
-            addBusButton.setVisible(true);
-            addBusButton.setManaged(true);
-
-            ContextMenu adminMenu = new ContextMenu();
-            MenuItem editItem = new MenuItem("✏️ Edit Selected Bus");
-            editItem.setOnAction(event -> {
-                Bus selectedBus = busTable.getSelectionModel().getSelectedItem();
-                if (selectedBus != null) openBusForm(selectedBus);
-            });
-
-            MenuItem deleteItem = new MenuItem("🗑️ Delete Selected Bus");
-            deleteItem.setOnAction(event -> {
-                Bus selectedBus = busTable.getSelectionModel().getSelectedItem();
-                if (selectedBus != null) {
-                    Alert confirm = new Alert(Alert.AlertType.CONFIRMATION, "Delete " + selectedBus.getBusNumber() + "?");
-                    if (confirm.showAndWait().orElse(ButtonType.CANCEL) == ButtonType.OK) {
-                        if (transportDAO.deleteBus(selectedBus.getBusNumber())) {
-                            masterBusList.remove(selectedBus);
-                        }
-                    }
-                }
-            });
-
-            adminMenu.getItems().addAll(editItem, deleteItem);
-            busTable.setContextMenu(adminMenu);
-        } else {
-            addBusButton.setVisible(false);
-            addBusButton.setManaged(false);
-            busTable.setContextMenu(null);
-        }
+        // Toggle UI elements based on permissions
+        addBusButton.setVisible(canManageTransport);
+        addBusButton.setManaged(canManageTransport);
+        colAction.setVisible(canManageTransport); // Hide action column if student
+        busTable.refresh(); // Refresh to render cells properly based on new permissions
     }
 
     @FXML
     public void goBack(){
         Navigator.goTo("/com/Unify/fxml/utility.fxml");
     }
+
     @FXML
     private void handleAddBus() {
         if (currentGroup != null) openBusForm(null);
@@ -188,7 +208,6 @@ public class TransportController implements Initializable {
             Parent root = loader.load();
 
             AddBusController controller = loader.getController();
-            // Pass the current Group ID so the AddBusController knows where to save it!
             controller.setGroupId(currentGroup.getId());
             if (busToEdit != null) {
                 controller.initData(busToEdit);

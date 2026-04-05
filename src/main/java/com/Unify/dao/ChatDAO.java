@@ -64,9 +64,10 @@ public class ChatDAO {
     }
 
     // Fetch ONLY new messages (used by the real-time background poller)
-    public List<ChatMessage> getNewMessages(int groupId, Timestamp since) {
+    public List<ChatMessage> getModifiedMessages(int groupId, Timestamp since) {
         List<ChatMessage> list = new ArrayList<>();
-        String sql = FETCH_SQL + " AND m.created_at > ? ORDER BY m.created_at ASC";
+        // Now we check updated_at instead of created_at!
+        String sql = FETCH_SQL + " AND m.updated_at > ? ORDER BY m.created_at ASC";
 
         try (Connection c = DB.conn(); PreparedStatement ps = c.prepareStatement(sql)) {
             ps.setInt(1, groupId);
@@ -101,7 +102,9 @@ public class ChatDAO {
                 rs.getTimestamp("created_at"),
                 replyId,
                 rs.getString("reply_username"),
-                rs.getString("reply_message")
+                rs.getString("reply_message"),
+                rs.getBoolean("is_deleted"),
+                rs.getTimestamp("updated_at")
         );
     }
     // Fetch only the absolute latest message for the sidebar preview
@@ -118,5 +121,16 @@ public class ChatDAO {
             e.printStackTrace();
         }
         return null;
+    }
+    public boolean deleteMessage(int messageId, int currentUserId) {
+        String sql = "UPDATE group_messages SET is_deleted = TRUE, message = 'This message was deleted' WHERE id = ? AND sender_id = ?";
+        try (Connection c = DB.conn(); PreparedStatement ps = c.prepareStatement(sql)) {
+            ps.setInt(1, messageId);
+            ps.setInt(2, currentUserId);
+            return ps.executeUpdate() > 0;
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return false;
+        }
     }
 }

@@ -1,55 +1,45 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <?import javafx.scene.control.*?>
-<?import javafx.scene.control.cell.*?>
 <?import javafx.scene.layout.*?>
+<?import javafx.scene.control.cell.*?>
 
-<BorderPane style="-fx-background-color: #F8FAFC;" xmlns="http://javafx.com/javafx/17.0.12" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.Unify.controller.LibraryController">
+<VBox spacing="15" style="-fx-background-color: #F8FAFC; -fx-padding: 20;" xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.Unify.controller.LibraryController">
 
-    <top>
-        <HBox alignment="CENTER_LEFT" spacing="20" style="-fx-background-color: #ffffff; -fx-padding: 15 20; -fx-border-color: #e2e8f0; -fx-border-width: 0 0 1 0;">
-            <Button text="← Back" onAction="#goBack" styleClass="btn-secondary"/>
+    <HBox alignment="CENTER_LEFT" spacing="15" style="-fx-padding: 0 0 10 0; -fx-border-color: #E2E8F0; -fx-border-width: 0 0 1 0;">
+        <Button text="⬅ Back" onAction="#goBack" style="-fx-background-color: transparent; -fx-text-fill: #64748B; -fx-font-weight: bold; -fx-cursor: hand; -fx-padding: 5 10;"/>
+        <Label text="Library" style="-fx-font-size: 24; -fx-font-weight: bold; -fx-text-fill: #1E293B;"/>
+        <Region HBox.hgrow="ALWAYS"/>
+        <Label text="Select Group: " style="-fx-font-weight: bold; -fx-text-fill: #64748B;"/>
+        <ComboBox fx:id="groupComboBox" prefWidth="200"/>
+    </HBox>
 
-            <Label style="-fx-font-size: 20px; -fx-font-weight: bold;" text="Library:"/>
-            <ComboBox fx:id="groupComboBox" prefWidth="200" promptText="Select a Group..."/>
+    <Label fx:id="statusLabel" text="Please select a group from the dropdown above to view its library." style="-fx-text-fill: #64748b; -fx-font-size: 14px;"/>
 
-            <Region HBox.hgrow="ALWAYS" />
+    <HBox alignment="CENTER_LEFT" spacing="15" style="-fx-padding: 5 0;">
+        <TextField fx:id="searchField" promptText="🔍 Search books..." prefWidth="250" style="-fx-padding: 8; -fx-background-radius: 5; -fx-border-color: #cbd5e1;"/>
+        <Region HBox.hgrow="ALWAYS" />
 
-            <HBox fx:id="adminControls" spacing="10" visible="false" managed="false">
-                <Button text="➕ Add Book" onAction="#handleAddBook" styleClass="btn-primary"/>
-                <Button text="📦 Requests" onAction="#showRequests" styleClass="btn-secondary" style="-fx-background-color: #3B82F6; -fx-text-fill: white; -fx-font-weight: bold;"/>
-            </HBox>
-        </HBox>
-    </top>
+        <Button fx:id="requestsBtn" text="📦 Requests" onAction="#showRequests" visible="false" managed="false" style="-fx-background-color: transparent; -fx-text-fill: #475569; -fx-font-weight: bold; -fx-cursor: hand; -fx-padding: 8 15;"/>
+        <Button fx:id="addBookBtn" text="➕ Add Book" onAction="#handleAddBook" visible="false" managed="false" style="-fx-background-color: #3B82F6; -fx-text-fill: white; -fx-background-radius: 6; -fx-padding: 8 15; -fx-font-weight: bold; -fx-cursor: hand;"/>
+        <Button fx:id="cartButton" text="🛒 Cart (0)" onAction="#showCart" visible="false" managed="false" style="-fx-background-color: #F59E0B; -fx-text-fill: white; -fx-background-radius: 6; -fx-padding: 8 15; -fx-font-weight: bold; -fx-cursor: hand;"/>
+    </HBox>
 
-    <center>
-        <VBox spacing="15" style="-fx-padding: 20;">
-            <Label fx:id="statusLabel" text="Please select a group from the dropdown above to view its library." style="-fx-text-fill: #64748b; -fx-font-size: 16px;"/>
+    <TableView fx:id="booksTable" VBox.vgrow="ALWAYS" style="-fx-background-radius: 5; -fx-border-color: #e2e8f0;">
+        <columns>
+            <TableColumn fx:id="colTitle" text="Title" prefWidth="200">
+                <cellValueFactory><PropertyValueFactory property="title"/></cellValueFactory>
+            </TableColumn>
+            <TableColumn fx:id="colAuthor" text="Author" prefWidth="180">
+                <cellValueFactory><PropertyValueFactory property="author"/></cellValueFactory>
+            </TableColumn>
+            <TableColumn fx:id="colDesc" text="Description" prefWidth="280">
+                <cellValueFactory><PropertyValueFactory property="description"/></cellValueFactory>
+            </TableColumn>
+            <TableColumn fx:id="colAvail" text="Available" prefWidth="80">
+                <cellValueFactory><PropertyValueFactory property="availableCopies"/></cellValueFactory>
+            </TableColumn>
+            <TableColumn fx:id="colAction" text="Action" prefWidth="160"/>
+        </columns>
+    </TableView>
 
-            <HBox spacing="10" alignment="CENTER_LEFT">
-                <TextField fx:id="searchField" promptText="🔍 Search books by title or author..." HBox.hgrow="ALWAYS" style="-fx-padding: 8; -fx-background-radius: 5; -fx-border-color: #cbd5e1;"/>
-                <Region HBox.hgrow="ALWAYS" />
-                <Button fx:id="cartButton" text="🛒 Cart (0)" onAction="#showCart" styleClass="btn-primary" style="-fx-background-color: #F59E0B;" visible="false" managed="false"/>
-            </HBox>
-
-            <TableView fx:id="booksTable" VBox.vgrow="ALWAYS" style="-fx-background-radius: 5; -fx-border-color: #e2e8f0;">
-                <columns>
-                    <TableColumn fx:id="colTitle" text="Title" prefWidth="200">
-                        <cellValueFactory><PropertyValueFactory property="title"/></cellValueFactory>
-                    </TableColumn>
-                    <TableColumn fx:id="colAuthor" text="Author" prefWidth="180">
-                        <cellValueFactory><PropertyValueFactory property="author"/></cellValueFactory>
-                    </TableColumn>
-                    <TableColumn fx:id="colDesc" text="Description" prefWidth="280">
-                        <cellValueFactory><PropertyValueFactory property="description"/></cellValueFactory>
-                    </TableColumn>
-                    <TableColumn fx:id="colAvail" text="Available" prefWidth="80">
-                        <cellValueFactory><PropertyValueFactory property="availableCopies"/></cellValueFactory>
-                    </TableColumn>
-
-                    <TableColumn fx:id="colAction" text="Action" prefWidth="80"/>
-                </columns>
-            </TableView>
-        </VBox>
-    </center>
-
-</BorderPane>
+</VBox>

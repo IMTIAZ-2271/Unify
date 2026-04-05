@@ -10,6 +10,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.stream.Collectors;
+import java.time.YearMonth;
 
 /**
  * Single source of truth for all user data.
@@ -66,15 +67,30 @@ public class AppData {
     }
 
     public List<Event> getEventsForMonth(int year, int month) {
+        YearMonth targetMonth = YearMonth.of(year, month);
+        LocalDate monthStart = targetMonth.atDay(1);
+        LocalDate monthEnd = targetMonth.atEndOfMonth();
+
         return events.stream()
-                .filter(e -> e.getStartTime().getYear() == year
-                        && e.getStartTime().getMonthValue() == month)
+                .filter(e -> {
+                    LocalDate eventStart = e.getStartTime().toLocalDate();
+                    LocalDate eventEnd = e.getEndTime().toLocalDate();
+
+                    // Overlap rule: Event starts on or before month ends AND event ends on or after month starts
+                    return !eventStart.isAfter(monthEnd) && !eventEnd.isBefore(monthStart);
+                })
                 .collect(Collectors.toList());
     }
 
     public List<Event> getEventsForDay(LocalDate d) {
         return events.stream()
-                .filter(e -> e.getStartTime().toLocalDate().equals(d))
+                .filter(e -> {
+                    LocalDate start = e.getStartTime().toLocalDate();
+                    LocalDate end = e.getEndTime().toLocalDate();
+
+                    // The target day must be on or after the start date, AND on or before the end date
+                    return !d.isBefore(start) && !d.isAfter(end);
+                })
                 .collect(Collectors.toList());
     }
 

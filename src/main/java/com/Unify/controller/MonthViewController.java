@@ -14,6 +14,7 @@ import javafx.fxml.FXMLLoader;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
+import javafx.scene.control.Button;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.Tooltip;
@@ -38,6 +39,9 @@ public class MonthViewController {
     private VBox filterPanel;   // left sidebar for group filters
     @FXML
     private VBox calendarArea;
+
+    @FXML
+    private Button selectAllButton;
 
     private YearMonth ym = YearMonth.now();
 
@@ -73,21 +77,18 @@ public class MonthViewController {
     // ── Filter panel ──────────────────────────────────────────────────────
     private void loadGroupFilters() {
         filterPanel.getChildren().clear();
-
-        Label header = new Label("Show Events");
-        header.setStyle("-fx-font-weight:bold;-fx-font-size:12px;-fx-text-fill:#475569;-fx-padding:0 0 6 0;");
-        filterPanel.getChildren().add(header);
+        updateSelectAllButtonText(); // Sync text on load
 
         // Personal checkbox
         CheckBox personalCb = new CheckBox("Personal");
         personalCb.setSelected(showPersonal);
-        personalCb.setStyle("-fx-font-size:12px;");
-        Circle dot0 = new Circle(6, Color.web(ColorUtil.defaultPersonal()));
-        HBox pRow = new HBox(6, dot0, personalCb);
+        personalCb.setStyle("-fx-font-size:13px;-fx-text-fill:#334155;");
+        Circle dot0 = new Circle(5, Color.web(ColorUtil.defaultPersonal()));
+        HBox pRow = new HBox(8, dot0, personalCb);
         pRow.setAlignment(Pos.CENTER_LEFT);
-        pRow.setPadding(new Insets(2, 0, 2, 0));
         personalCb.selectedProperty().addListener((o, ov, nv) -> {
             showPersonal = nv;
+            updateSelectAllButtonText(); // Sync button text if manually changed
             dayRender();
             render();
         });
@@ -102,24 +103,54 @@ public class MonthViewController {
                 groupFilter.putIfAbsent(id, true);
 
                 String color = ColorUtil.forGroup(g.getId());
-                Circle dot = new Circle(6, Color.web(color));
+                Circle dot = new Circle(5, Color.web(color));
 
                 CheckBox cb = new CheckBox(g.getName());
                 cb.setSelected(groupFilter.get(id));
-                cb.setStyle("-fx-font-size:12px;");
+                cb.setStyle("-fx-font-size:13px;-fx-text-fill:#334155;");
                 cb.selectedProperty().addListener((o, ov, nv) -> {
                     groupFilter.put(id, nv);
+                    updateSelectAllButtonText(); // Sync button text if manually changed
                     dayRender();
                     render();
                 });
 
-                HBox row = new HBox(6, dot, cb);
+                HBox row = new HBox(8, dot, cb);
                 row.setAlignment(Pos.CENTER_LEFT);
-                row.setPadding(new Insets(2, 0, 2, 0));
                 filterPanel.getChildren().add(row);
             }
         } catch (Exception e) {
             e.printStackTrace();
+        }
+    }
+    // ── Button Logic ──────────────────────────────────────────────────────
+
+    @FXML
+    public void checkOrUncheckAll(ActionEvent event) {
+        boolean allChecked = isAllSelected();
+        boolean newState = !allChecked; // Toggle state
+
+        showPersonal = newState;
+        for (Integer key : groupFilter.keySet()) {
+            groupFilter.put(key, newState);
+        }
+
+        loadGroupFilters(); // Re-render the panel with new checkmarks
+        dayRender();
+        render();
+    }
+
+    private boolean isAllSelected() {
+        if (!showPersonal) return false;
+        for (Boolean isChecked : groupFilter.values()) {
+            if (!isChecked) return false;
+        }
+        return true;
+    }
+
+    private void updateSelectAllButtonText() {
+        if (selectAllButton != null) {
+            selectAllButton.setText(isAllSelected() ? "Deselect All" : "Select All");
         }
     }
 
@@ -162,7 +193,15 @@ public class MonthViewController {
                     Integer gid = e.getGroupId();
                     if (gid != null && groupFilter.containsKey(gid) && !groupFilter.get(gid)) continue;
                 }
-                byDay.computeIfAbsent(e.getStartTime().toLocalDate(), k -> new ArrayList<>()).add(e);
+                LocalDate startDate = e.getStartTime().toLocalDate();
+                LocalDate endDate = e.getEndTime().toLocalDate();
+                LocalDate currentDay = startDate;
+
+                // Add the event to every single day it spans across!
+                while (!currentDay.isAfter(endDate)) {
+                    byDay.computeIfAbsent(currentDay, k -> new ArrayList<>()).add(e);
+                    currentDay = currentDay.plusDays(1);
+                }
             }
         } catch (Exception ex) {
             ex.printStackTrace();
@@ -268,10 +307,6 @@ public class MonthViewController {
 
     public void uncheckAllGroups() {
         groupFilter.replaceAll((key, oldValue) -> false);
-    }
-
-    public void checkOrUncheckAll(ActionEvent event) {
-
     }
 
     public static void refreshCheckbox() {

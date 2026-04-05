@@ -1,5 +1,4 @@
 <?xml version="1.0" encoding="UTF-8"?>
-
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
 <?import javafx.scene.text.Font?>
@@ -13,25 +12,25 @@
     </Label>
 
     <GridPane hgap="10" vgap="15">
-        <Label text="Bus Number:" GridPane.columnIndex="0" GridPane.rowIndex="0" />
-        <TextField fx:id="busNumberField" promptText="e.g., B-05" GridPane.columnIndex="1" GridPane.rowIndex="0" />
+        <Label text="Bus Number:" GridPane.columnIndex="0" GridPane.rowIndex="0" style="-fx-text-fill: #475569; -fx-font-weight: bold;"/>
+        <TextField fx:id="busNumberField" promptText="e.g., B-05" GridPane.columnIndex="1" GridPane.rowIndex="0" style="-fx-padding: 8;"/>
 
-        <Label text="Route Name:" GridPane.columnIndex="0" GridPane.rowIndex="1" />
-        <TextField fx:id="routeField" promptText="e.g., Campus to Mirpur" GridPane.columnIndex="1" GridPane.rowIndex="1" />
+        <Label text="Route Name:" GridPane.columnIndex="0" GridPane.rowIndex="1" style="-fx-text-fill: #475569; -fx-font-weight: bold;"/>
+        <TextField fx:id="routeField" promptText="e.g., Campus to Mirpur" GridPane.columnIndex="1" GridPane.rowIndex="1" style="-fx-padding: 8;"/>
 
-        <Label text="Departure Time:" GridPane.columnIndex="0" GridPane.rowIndex="2" />
-        <TextField fx:id="timeField" promptText="HH:MM:SS (e.g., 14:30:00)" GridPane.columnIndex="1" GridPane.rowIndex="2" />
+        <Label text="Departure Time:" GridPane.columnIndex="0" GridPane.rowIndex="2" style="-fx-text-fill: #475569; -fx-font-weight: bold;"/>
+        <TextField fx:id="timeField" promptText="HH:MM:SS" GridPane.columnIndex="1" GridPane.rowIndex="2" style="-fx-padding: 8;"/>
 
-        <Label text="Trip Type:" GridPane.columnIndex="0" GridPane.rowIndex="3" />
-        <ComboBox fx:id="typeCombo" prefWidth="150.0" GridPane.columnIndex="1" GridPane.rowIndex="3" />
+        <Label text="Trip Type:" GridPane.columnIndex="0" GridPane.rowIndex="3" style="-fx-text-fill: #475569; -fx-font-weight: bold;"/>
+        <ComboBox fx:id="typeCombo" prefWidth="150.0" GridPane.columnIndex="1" GridPane.rowIndex="3" style="-fx-padding: 4;"/>
 
-        <Label text="Message/Status:" GridPane.columnIndex="0" GridPane.rowIndex="4" />
-        <TextField fx:id="messageField" promptText="Optional status..." GridPane.columnIndex="1" GridPane.rowIndex="4" />
+        <Label text="Message/Status:" GridPane.columnIndex="0" GridPane.rowIndex="4" style="-fx-text-fill: #475569; -fx-font-weight: bold;"/>
+        <TextField fx:id="messageField" promptText="Optional status..." GridPane.columnIndex="1" GridPane.rowIndex="4" style="-fx-padding: 8;"/>
     </GridPane>
 
-    <HBox spacing="15.0" alignment="CENTER" style="-fx-padding: 10 0 0 0;">
-        <Button text="Cancel" onAction="#handleCancel" style="-fx-background-color: #e2e8f0; -fx-text-fill: #0f172a; -fx-padding: 8 20;" />
-        <Button text="Save Bus" onAction="#handleSave" style="-fx-background-color: #10b981; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 8 20;" />
+    <HBox spacing="15.0" alignment="CENTER_RIGHT" style="-fx-padding: 20 0 0 0;">
+        <Button text="Cancel" onAction="#handleCancel" style="-fx-background-color: transparent; -fx-text-fill: #64748B; -fx-font-weight: bold; -fx-padding: 6 10; -fx-cursor: hand;" />
+        <Button text="Save Bus" onAction="#handleSave" style="-fx-background-color: #3B82F6; -fx-text-fill: white; -fx-background-radius: 6; -fx-padding: 8 20; -fx-font-weight: bold; -fx-cursor: hand;" />
     </HBox>
 
 </VBox>

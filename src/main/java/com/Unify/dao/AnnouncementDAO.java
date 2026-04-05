@@ -43,4 +43,27 @@ public class AnnouncementDAO {
         }
         return list;
     }
+    public boolean updateAnnouncement(int id, String title, String content) {
+        String sql = "UPDATE announcements SET title = ?, content = ? WHERE id = ?";
+        try (Connection c = DB.conn(); PreparedStatement ps = c.prepareStatement(sql)) {
+            ps.setString(1, title);
+            ps.setString(2, content);
+            ps.setInt(3, id);
+            return ps.executeUpdate() > 0;
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    public boolean deleteAnnouncement(int id) {
+        String sql = "DELETE FROM announcements WHERE id = ?";
+        try (Connection c = DB.conn(); PreparedStatement ps = c.prepareStatement(sql)) {
+            ps.setInt(1, id);
+            return ps.executeUpdate() > 0;
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
 }

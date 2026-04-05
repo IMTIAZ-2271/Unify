@@ -9,6 +9,7 @@ module com.Unify {
     requires java.sql;
     requires java.desktop;
     requires kotlin.stdlib;
+    requires java.security.jgss;
 
 
     opens com.Unify.controller to javafx.fxml;
