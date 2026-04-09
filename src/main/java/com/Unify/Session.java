@@ -1,6 +1,7 @@
 package com.Unify;
 
 import com.Unify.model.User;
+import com.Unify.service.NotificationService;
 
 public class Session {
     private static User user;
@@ -11,6 +12,8 @@ public class Session {
 
     public static void logout() {
         user = null;
+        // STOP THE REAL-TIME POLLER HERE
+        NotificationService.get().stop();
     }
 
     public static User currentUser() {

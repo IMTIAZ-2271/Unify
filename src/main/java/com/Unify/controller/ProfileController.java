@@ -1,10 +1,13 @@
 package com.Unify.controller;
 
+import com.Unify.AppData;
 import com.Unify.Session;
 import com.Unify.dao.UserDAO;
 import com.Unify.model.User;
+import com.Unify.util.AsyncWriter;
 import com.Unify.util.Crypto;
 import com.Unify.util.Imgs;
+import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.scene.control.Label;
 import javafx.scene.control.PasswordField;
@@ -16,6 +19,7 @@ import javafx.stage.FileChooser;
 
 import java.io.File;
 import java.time.format.DateTimeFormatter;
+import java.util.AbstractMap;
 
 public class ProfileController {
 
@@ -59,33 +63,52 @@ public class ProfileController {
         fc.getExtensionFilters().add(new FileChooser.ExtensionFilter("Images", "*.png", "*.jpg", "*.jpeg"));
         File f = fc.showOpenDialog(avatarView.getScene().getWindow());
         if (f != null) {
-            try {
-                newPicBytes = Imgs.toBytes(f);
-                avatarView.setImage(new Image(f.toURI().toString()));
-            } catch (Exception e) {
-                profileErr("Could not load image.");
-            }
+            AsyncWriter.get().write(
+                    () -> {
+                        byte[] bytes = Imgs.toBytes(f);
+                        Image image = Imgs.fromBytes(bytes);
+                        return new AbstractMap.SimpleEntry<>(bytes, image);
+                    },
+                    (result) -> Platform.runLater(() -> {
+                        newPicBytes = result.getKey();
+                        if (result.getValue() != null) avatarView.setImage(result.getValue());
+                        Imgs.circle(avatarView, 50);
+                        profileErr.setVisible(false);
+                    }),
+                    (error) -> Platform.runLater(() -> profileErr("Could not load image."))
+            );
         }
     }
 
     @FXML
     private void saveProfile() {
         String dn = displayField.getText().trim();
+        String bio = bioArea.getText().trim();
+        byte[] pic = newPicBytes;
         if (dn.isEmpty()) {
             profileErr("Display name cannot be empty.");
             return;
         }
-        try {
-            dao.updateProfile(user.getId(), dn, bioArea.getText().trim(), newPicBytes);
-            user.setDisplayName(dn);
-            user.setBio(bioArea.getText().trim());
-            if (newPicBytes != null) user.setProfilePicture(newPicBytes);
-            Session.login(user);
-            profileErr.setVisible(false);
-            success("Profile saved!");
-        } catch (Exception e) {
-            profileErr(e.getMessage());
-        }
+        AsyncWriter.get().write(
+                () -> {
+                    dao.updateProfile(user.getId(), dn, bio, pic);
+                    byte[] savedPic = pic != null ? pic : user.getProfilePicture();
+                    Image image = Imgs.fromBytes(savedPic);
+                    return new AbstractMap.SimpleEntry<>(savedPic, image);
+                },
+                (result) -> Platform.runLater(() -> {
+                    user.setDisplayName(dn);
+                    user.setBio(bio);
+                    if (pic != null) user.setProfilePicture(pic);
+                    Session.login(user);
+                    AppData.get().fireUserChanged();
+                    if (result.getValue() != null) avatarView.setImage(result.getValue());
+                    Imgs.circle(avatarView, 50);
+                    profileErr.setVisible(false);
+                    success("Profile saved!");
+                }),
+                (error) -> Platform.runLater(() -> profileErr(error.getMessage()))
+        );
     }
 
     @FXML

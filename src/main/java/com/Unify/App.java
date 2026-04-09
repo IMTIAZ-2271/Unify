@@ -4,6 +4,7 @@ import com.Unify.dao.UserDAO;
 import com.Unify.model.User;
 import com.Unify.service.NotificationService;
 import com.Unify.service.SyncEngine;
+import com.Unify.util.AsyncWriter;
 import com.Unify.util.DataLoader;
 import com.Unify.util.SessionStore;
 import javafx.application.Application;
@@ -46,7 +47,6 @@ public class App extends Application {
     }
 
     private static void showLoadingScreen() {
-        // Simple spinner while data loads
         ProgressIndicator spinner = new ProgressIndicator();
         Label msg = new Label("Loading your data...");
         VBox box = new VBox(16, spinner, msg);
@@ -58,27 +58,33 @@ public class App extends Application {
     }
 
     private static void loadDataThenShowMain() {
-        new Thread(() -> {
-            try {
-                new DataLoader().loadAll();            // fetch everything
-                Platform.runLater(() -> {
-                    try {
-                        showMain();                    // now show the app
-                        SyncEngine.get().start();      // start polling
-                    } catch (Exception e) {
-                        e.printStackTrace();
+        try {
+            showMain(); // Show the app interface immediately
+
+            AsyncWriter.get().write(
+                    () -> {
+                        new DataLoader().loadAll(); // Fetch everything
+                        return null;
+                    },
+                    (success) -> {
+                        try {
+                            SyncEngine.get().start(); // Start background polling after data loads
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
+                    },
+                    (error) -> {
+                        error.printStackTrace();
+                        try {
+                            showLogin();
+                        } catch (Exception ex) {
+                            ex.printStackTrace();
+                        }
                     }
-                });
-            } catch (Exception e) {
-                Platform.runLater(() -> {
-                    try {
-                        showLogin();
-                    } catch (Exception ex) {
-                        ex.printStackTrace();
-                    }
-                });
-            }
-        }, "data-loader").start();
+            );
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     public static void showLogin() throws IOException {
@@ -101,7 +107,7 @@ public class App extends Application {
     }
 
     public static void goToMain() {
-        showLoadingScreen();
+        showLoadingScreen(); // This will just be a fast flash now
         loadDataThenShowMain();
     }
 

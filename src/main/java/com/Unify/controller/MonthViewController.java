@@ -60,12 +60,27 @@ public class MonthViewController {
     }*/
 
 
+//    @FXML
+//    private void initialize() {
+//        loadGroupFilters();
+//        render();
+//        // Re-render instantly whenever events change (e.g. sync from server)
+//        AppData.get().addEventsListener(this::render);
+//    }
     @FXML
     private void initialize() {
         loadGroupFilters();
-        render();
-        // Re-render instantly whenever events change (e.g. sync from server)
-        AppData.get().addEventsListener(this::render);
+        render(); // This will draw an empty calendar structure while data loads
+
+        // Listen for when the background data finally arrives
+        AppData.get().addEventsListener(() -> {
+            // Platform.runLater ensures JavaFX waits until the current layout pass
+            // is fully complete before trying to paint the events onto the screen.
+            javafx.application.Platform.runLater(this::render);
+        });
+
+        AppData.get().addGroupsListener(() ->
+                javafx.application.Platform.runLater(this::loadGroupFilters));
     }
 
     // Unregister when leaving

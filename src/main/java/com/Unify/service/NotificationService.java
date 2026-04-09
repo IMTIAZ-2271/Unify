@@ -1,101 +1,91 @@
 package com.Unify.service;
 
+import com.Unify.AppData;
 import com.Unify.Session;
-import com.Unify.dao.EventDAO;
 import com.Unify.dao.NotificationDAO;
-import com.Unify.model.Event;
 import com.Unify.model.Notification;
+import com.Unify.util.AsyncWriter;
+import javafx.animation.Animation;
+import javafx.animation.KeyFrame;
+import javafx.animation.Timeline;
 import javafx.application.Platform;
-
-import java.sql.SQLException;
-import java.time.format.DateTimeFormatter;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
+import javafx.util.Duration;
 import java.util.function.Consumer;
 
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
+import java.time.LocalDateTime;
+import java.util.List;
 
 public class NotificationService {
 
     private static final NotificationService INSTANCE = new NotificationService();
+    private final NotificationDAO dao = new NotificationDAO();
+
+    private Timeline backgroundPoller;
+    private LocalDateTime lastCheckTime;
+
+    private Consumer<Integer> badgeUpdater;
 
     public static NotificationService get() {
         return INSTANCE;
     }
 
-    private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
-    private final EventDAO eventDAO = new EventDAO();
-    private final NotificationDAO notifDAO = new NotificationDAO();
-    private final Set<Integer> alerted = new HashSet<>();
-    private Consumer<Integer> badgeUpdater;
-    private ScheduledExecutorService executor;
-    private static final DateTimeFormatter FMT = DateTimeFormatter.ofPattern("MMM d, h:mm a");
+    private NotificationService() {}
 
-    private NotificationService() {
+    public void start() {
+        if (backgroundPoller != null) {
+            backgroundPoller.stop();
+        }
+
+        lastCheckTime = LocalDateTime.now();
+
+        // Polls the database every 5 seconds
+        backgroundPoller = new Timeline(new KeyFrame(Duration.seconds(5), e -> fetchNewBackgroundNotifications()));
+        backgroundPoller.setCycleCount(Animation.INDEFINITE);
+        backgroundPoller.play();
     }
-
-
-public void start() {
-    // 1. Check if the executor is null OR if it has already been shut down
-    if (executor == null || executor.isShutdown() || executor.isTerminated()) {
-        // 2. Create a fresh thread pool!
-        executor = Executors.newSingleThreadScheduledExecutor();
-    }
-
-    // 3. Schedule the 'tick' method to run
-    // I set this back to your original timing: start after 10 seconds, run every 60 seconds.
-    executor.scheduleAtFixedRate(this::tick, 10, 60, TimeUnit.SECONDS);
-}
 
     public void stop() {
-        if (executor != null && !executor.isShutdown()) {
-            executor.shutdownNow(); // Kill the thread when logging out
+        if (backgroundPoller != null) {
+            backgroundPoller.stop();
         }
-        alerted.clear();
     }
 
+    private void fetchNewBackgroundNotifications() {
+        if (!Session.isLoggedIn()) return;
 
+        com.Unify.util.AsyncWriter.get().write(
+                () -> {
+                    List<Notification> newNotifs = dao.newSince(Session.uid(), lastCheckTime);
+                    lastCheckTime = LocalDateTime.now();
+                    return newNotifs;
+                },
+                (newNotifs) -> {
+                    if (newNotifs != null && !newNotifs.isEmpty()) {
+                        // 🛠️ THE FIX: Loop through and use AppData's built-in write method!
+                        // We loop backwards so they are inserted at index 0 in chronological order.
+                        for (int i = newNotifs.size() - 1; i >= 0; i--) {
+                            AppData.get().addOrUpdateNotification(newNotifs.get(i));
+                        }
+                        refreshBadge();
+                    }
+                },
+                (error) -> System.err.println("Background notification check failed: " + error.getMessage())
+        );
+    }
 
-    public void setBadgeUpdater(Consumer<Integer> fn) {
-        this.badgeUpdater = fn;
+    public void setBadgeUpdater(Consumer<Integer> badgeUpdater) {
+        this.badgeUpdater = badgeUpdater;
+        refreshBadge(); // Trigger an initial update as soon as the controller connects
     }
 
     public void refreshBadge() {
-        if (!Session.isLoggedIn() || badgeUpdater == null) return;
-        try {
-            int n = notifDAO.unreadCount(Session.uid());
-            Platform.runLater(() -> badgeUpdater.accept(n));
-        } catch (SQLException ignored) {
+        if (badgeUpdater != null) {
+            // We can now grab the count directly from our lightning-fast AppData cache!
+            int unreadCount = AppData.get().getUnreadCount();
+
+            // Ensure the UI update happens on the main JavaFX thread
+            javafx.application.Platform.runLater(() -> badgeUpdater.accept(unreadCount));
         }
     }
 
-    private void tick() {
-        if (!Session.isLoggedIn()) return;
-        try (java.sql.Connection c = com.Unify.util.DB.conn();
-             java.sql.PreparedStatement ps = c.prepareStatement("DELETE FROM notifications WHERE created_at < NOW() - INTERVAL 30 DAY")) {
-            ps.executeUpdate();
-        } catch (SQLException ignored) {}
-        try {
-            List<Event> soon = eventDAO.upcoming(Session.uid(), 15);
-            for (Event e : soon) {
-                if (alerted.add(e.getId())) {
-                    Notification n = new Notification(Session.uid(),
-                            "⏰ Upcoming: " + e.getTitle(),
-                            "Starts at " + e.getStartTime().format(FMT)
-                                    + (e.getLocation() != null && !e.getLocation().isEmpty() ? " · " + e.getLocation() : ""),
-                            "reminder");
-                    n.setReferenceId(e.getId());
-                    notifDAO.create(n);
-                    refreshBadge();
-                }
-            }
-        } catch (SQLException ignored) {
-        }
-    }
 }

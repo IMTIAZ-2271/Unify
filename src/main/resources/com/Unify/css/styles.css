@@ -150,7 +150,7 @@
 
 .sbar-btn {
     -fx-background-color: transparent;
-    -fx-text-fill: #94A3B8;
+    -fx-text-fill:  #94A3B8;
     -fx-alignment: CENTER_LEFT;
     -fx-padding: 12 20;
     -fx-cursor: hand;

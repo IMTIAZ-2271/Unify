@@ -43,6 +43,20 @@ public class AppData {
     private AppData() {
     }
 
+    private final List<Runnable> onUserChanged = new ArrayList<>();
+
+    public void addUserListener(Runnable r) {
+        onUserChanged.add(r);
+    }
+
+    public void removeUserListener(Runnable r) {
+        onUserChanged.remove(r);
+    }
+
+    public void fireUserChanged() {
+        fire(onUserChanged);
+    }
+
     // ── Initial load (called once on login) ──────────────────────────────
 
     public void loadAll(List<Event> e, List<Group> g,

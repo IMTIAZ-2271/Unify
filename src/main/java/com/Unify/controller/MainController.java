@@ -46,11 +46,14 @@ public class MainController {
         // Wire single-window navigation
         Navigator.init(contentArea, overlayArea);
 
-        userNameLabel.setText(Session.currentUser().getDisplayName());
-        Image img = Imgs.fromBytes(Session.currentUser().getProfilePicture());
-        if (img != null)
-            userAvatar.setImage(img);
-        Imgs.circle(userAvatar, 18);
+        // 1. Initial load of the avatar and name
+        updateSidebarProfile();
+
+        // 2. Listen for user profile changes and update the UI dynamically
+        AppData.get().addUserListener(() -> {
+            // Ensure UI updates happen on the JavaFX Application Thread
+            Platform.runLater(this::updateSidebarProfile);
+        });
 
         com.Unify.service.NotificationService.get().setBadgeUpdater(count -> {
             notifBadge.setText(count > 0 ? String.valueOf(count) : "");
@@ -58,8 +61,21 @@ public class MainController {
         });
         refreshBadge();
         showCalendar();
+    }
 
-        // verifyAdminAccess() has been removed from here!
+    /**
+     * Helper method to refresh the sidebar profile picture and display name.
+     */
+    private void updateSidebarProfile() {
+        User user = Session.currentUser();
+        if (user != null) {
+            userNameLabel.setText(user.getDisplayName());
+            Image img = Imgs.fromBytes(user.getProfilePicture());
+            if (img != null) {
+                userAvatar.setImage(img);
+            }
+            Imgs.circle(userAvatar, 18);
+        }
     }
 
     @FXML
@@ -77,6 +93,7 @@ public class MainController {
         Navigator.goTo("/com/Unify/fxml/notifications.fxml");
         refreshBadge();
     }
+
     @FXML
     public void showUtilities() {
         Navigator.goTo("/com/Unify/fxml/utility.fxml");
@@ -94,7 +111,7 @@ public class MainController {
             SessionStore.clear();
             Session.logout();
             App.showLogin();
-            MonthViewController.refreshCheckbox();
+            MonthViewController.refreshCheckbox(); // Assuming this is valid in your broader project
             AppData.get().clear();
         } catch (Exception e) {
             e.printStackTrace();

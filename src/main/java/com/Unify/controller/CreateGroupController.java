@@ -5,7 +5,9 @@ import com.Unify.Navigator;
 import com.Unify.Session;
 import com.Unify.dao.GroupDAO;
 import com.Unify.model.Group;
+import com.Unify.util.AsyncWriter;
 import com.Unify.util.Imgs;
+import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
 import javafx.scene.image.Image;
@@ -13,6 +15,7 @@ import javafx.scene.image.ImageView;
 import javafx.stage.FileChooser;
 
 import java.io.File;
+import java.util.AbstractMap;
 
 public class CreateGroupController {
 
@@ -75,18 +78,28 @@ public class CreateGroupController {
         fc.getExtensionFilters().add(new FileChooser.ExtensionFilter("Images", "*.png", "*.jpg", "*.jpeg"));
         File f = fc.showOpenDialog(saveBtn.getScene().getWindow());
         if (f != null) {
-            try {
-                picBytes = Imgs.toBytes(f);
-                previewImg.setImage(new Image(f.toURI().toString()));
-            } catch (Exception e) {
-                err("Could not load image.");
-            }
+            AsyncWriter.get().write(
+                    () -> {
+                        byte[] bytes = Imgs.toBytes(f);
+                        Image image = Imgs.fromBytes(bytes);
+                        return new AbstractMap.SimpleEntry<>(bytes, image);
+                    },
+                    (result) -> Platform.runLater(() -> {
+                        picBytes = result.getKey();
+                        if (result.getValue() != null) previewImg.setImage(result.getValue());
+                        Imgs.circle(previewImg, 40);
+                        errorLabel.setVisible(false);
+                    }),
+                    (error) -> Platform.runLater(() -> err("Could not load image."))
+            );
         }
     }
 
     @FXML
     private void doSave() {
         String name = nameField.getText().trim();
+        String desc = descArea.getText().trim();
+        byte[] pic = picBytes;
         if (name.isEmpty()) {
             err("Name is required.");
             return;
@@ -94,22 +107,50 @@ public class CreateGroupController {
         Integer parentId = null;
         Group sel = parentCombo.getValue();
         if (sel != null && sel.getId() != 0) parentId = sel.getId();
-        try {
-            if (existing != null) {
-                Group group = new Group();
-                group.setName(name);
-                dao.update(existing.getId(), name, descArea.getText().trim(), picBytes);
-                AppData.get().addOrUpdateGroup(group);
-            } else {
-                Group group = dao.create(name, descArea.getText().trim(), Session.uid(), parentId);
-                AppData.get().addOrUpdateGroup(group);
-            }
-            //Navigator.closeModal(onClose);
-            Navigator.close(titleLabel, onClose);
-        } catch (Exception e) {
-            err("Error: " + e.getMessage());
-            e.printStackTrace();
-        }
+        Integer selectedParentId = parentId;
+        AsyncWriter.get().write(
+                () -> {
+                    Group group;
+                    byte[] savedPic = pic;
+
+                    if (existing != null) {
+                        dao.update(existing.getId(), name, desc, pic);
+                        group = new Group();
+                        group.setId(existing.getId());
+                        group.setGroupCode(existing.getGroupCode());
+                        group.setName(name);
+                        group.setDescription(desc);
+                        group.setProfilePicture(pic != null ? pic : existing.getProfilePicture());
+                        group.setCreatedBy(existing.getCreatedBy());
+                        group.setMemberCount(existing.getMemberCount());
+                        group.setCurrentUserRole(existing.getCurrentUserRole());
+                        group.setParentGroupId(existing.getParentGroupId());
+                        group.setParentGroupName(existing.getParentGroupName());
+                        group.setCreatedAt(existing.getCreatedAt());
+                        savedPic = group.getProfilePicture();
+                    } else {
+                        group = dao.create(name, desc, Session.uid(), selectedParentId);
+                        if (group != null && pic != null) {
+                            dao.update(group.getId(), name, desc, pic);
+                            group.setProfilePicture(pic);
+                        }
+                        if (group != null) savedPic = group.getProfilePicture();
+                    }
+
+                    Image image = Imgs.fromBytes(savedPic);
+                    return new AbstractMap.SimpleEntry<>(group, image);
+                },
+                (result) -> Platform.runLater(() -> {
+                    if (result.getValue() != null) previewImg.setImage(result.getValue());
+                    Imgs.circle(previewImg, 40);
+                    if (result.getKey() != null) AppData.get().addOrUpdateGroup(result.getKey());
+                    Navigator.close(titleLabel, onClose);
+                }),
+                (error) -> Platform.runLater(() -> {
+                    err("Error: " + error.getMessage());
+                    error.printStackTrace();
+                })
+        );
     }
 
     @FXML

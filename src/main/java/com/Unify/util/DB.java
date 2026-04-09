@@ -16,7 +16,7 @@ public class DB {
     // ── Change these three lines to match your MySQL setup ──────────────────
     private static final String HOST = "localhost";
     private static final String PORT = "3306";
-    private static final String DATABASE = "calendar_app";
+    private static final String DATABASE = "Unify";
     private static final String USER = "root";
     private static final String PASSWORD = "Imti@z3point14159";
     // ────────────────────────────────────────────────────────────────────────

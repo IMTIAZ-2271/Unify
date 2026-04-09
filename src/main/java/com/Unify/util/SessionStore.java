@@ -15,8 +15,8 @@ import java.util.Properties;
  */
 public class SessionStore {
 
-    private static final long THREE_DAYS_MS = 60 * 1000;
-    private static final Path DIR = Path.of(System.getProperty("user.home"), ".calendarapp");
+    private static final long THREE_DAYS_MS = 3*24*60* 60 * 1000;
+    private static final Path DIR = Path.of(System.getProperty("user.home"), ".Unify");
     private static final Path FILE = DIR.resolve("session.properties");
 
     /**
@@ -29,7 +29,7 @@ public class SessionStore {
             p.setProperty("userId", String.valueOf(userId));
             p.setProperty("expires", String.valueOf(System.currentTimeMillis() + THREE_DAYS_MS));
             try (Writer w = Files.newBufferedWriter(FILE)) {
-                p.store(w, "CalendarApp session");
+                p.store(w, "Unify session");
             }
         } catch (IOException ignored) {
         }
