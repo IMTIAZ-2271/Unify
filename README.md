@@ -100,3 +100,32 @@ If you prefer to run the project manually from the command line, ensure you are 
 ```bash
 ./gradlew run
 ```
+<div align="center">
+  <table width="800">
+    <thead>
+      <tr>
+        <th width="400">Developers</th>
+        <th width="400">Supervisor</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr align="center">
+        <td>
+          <a href="https://github.com/rakibulroki02">Rakibul Hasan Roki</a><br>
+          Student ID: 2405038
+        </td>
+        <td rowspan="2" align="center">
+          <a href="https://github.com/mahirlabibdihan"><b>Mahir Labib Dihan</b></a><br>
+          Lecturer | CSE, BUET
+        </td>
+      </tr>
+      <tr align="center">
+        <td>
+          <a href="https://github.com/IMTIAZ-2271">MD. Imtiaz Rahman.</a><br>
+          Student ID: 2405039
+        </td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
